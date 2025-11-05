@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --radius: 1.25rem;
+  /* Sweet Shop Color Palette */
+  --sweet-pink: #FFD6E8;
+  --sweet-pink-light: #FFE8F1;
+  --sweet-magenta: #E91E8C;
+  --sweet-purple: #D4A5E8;
+  --sweet-cream: #FFF8E7;
+  --sweet-gold: #C89D6B;
+  
+  --background: #FFF0F7;
+  --foreground: #4A3B47;
+  --card: #FFFFFF;
+  --card-foreground: #4A3B47;
+  --popover: #FFFFFF;
+  --popover-foreground: #4A3B47;
+  --primary: #E91E8C;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFD6E8;
+  --secondary-foreground: #4A3B47;
+  --muted: #FFD6E8;
+  --muted-foreground: #8B7A87;
+  --accent: #D4A5E8;
+  --accent-foreground: #FFFFFF;
+  --destructive: #DC2626;
+  --border: #FFD6E8;
+  --input: #FFD6E8;
+  --ring: #E91E8C;
+  --chart-1: #E91E8C;
+  --chart-2: #D4A5E8;
+  --chart-3: #C89D6B;
+  --chart-4: #FFD6E8;
+  --chart-5: #FFF8E7;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #4A3B47;
+  --sidebar-primary: #E91E8C;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #FFD6E8;
+  --sidebar-accent-foreground: #4A3B47;
+  --sidebar-border: #FFD6E8;
+  --sidebar-ring: #E91E8C;
+  --destructive-foreground: #FFFFFF;
+}
+
+.dark {
+  --background: #2A1F27;
+  --foreground: #FFE8F1;
+  --card: #3A2D36;
+  --card-foreground: #FFE8F1;
+  --popover: #3A2D36;
+  --popover-foreground: #FFE8F1;
+  --primary: #FF69B4;
+  --primary-foreground: #FFFFFF;
+  --secondary: #4A3B47;
+  --secondary-foreground: #FFE8F1;
+  --muted: #4A3B47;
+  --muted-foreground: #B8A8B5;
+  --accent: #D4A5E8;
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --border: #4A3B47;
+  --input: #4A3B47;
+  --ring: #FF69B4;
+  --chart-1: #FF69B4;
+  --chart-2: #D4A5E8;
+  --chart-3: #C89D6B;
+  --chart-4: #FFD6E8;
+  --chart-5: #FFF8E7;
+  --sidebar: #3A2D36;
+  --sidebar-foreground: #FFE8F1;
+  --sidebar-primary: #FF69B4;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #4A3B47;
+  --sidebar-accent-foreground: #FFE8F1;
+  --sidebar-border: #4A3B47;
+  --sidebar-ring: #FF69B4;
+  --destructive-foreground: #FFFFFF;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Hide Next.js error overlay portal */
+nextjs-portal {
+  display: none !important;
+}
+
+/* Hide scrollbar for horizontal scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
+/* Custom animations for smoother transitions */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth sheet animations */
+[data-slot="sheet-content"][data-state="open"] {
+  animation: slideInFromRight 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+[data-slot="sheet-content"][data-state="closed"] {
+  animation: slideOutToRight 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Staggered animation for menu items */
+.menu-item-enter {
+  animation: fadeInUp 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+.menu-item-enter:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.menu-item-enter:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.menu-item-enter:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.menu-item-enter:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.menu-item-enter:nth-child(5) {
+  animation-delay: 0.25s;
+}
