@@ -29,7 +29,8 @@ function getApiBaseUrl(): string {
       return 'http://127.0.0.1:8000';
     }
   }
-  return 'http://127.0.0.1:8000';
+  // По умолчанию используем продакшн сервер
+  return 'http://81.162.55.70:8001';
 }
 
 const API_BASE_URL = getApiBaseUrl();

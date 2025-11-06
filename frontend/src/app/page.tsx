@@ -33,7 +33,8 @@ function getApiBaseUrl(): string {
       return 'http://127.0.0.1:8000';
     }
   }
-  return 'http://127.0.0.1:8000';
+  // По умолчанию используем продакшн сервер
+  return 'http://81.162.55.70:8001';
 }
 
 const API_BASE_URL = getApiBaseUrl();
@@ -108,21 +109,29 @@ export default function Home() {
 
   useEffect(() => {
     if (apiProducts.length === 0) return;
-    const mapped: FrontProduct[] = apiProducts.map((p) => ({
-      id: p.id,
-      name: language === "uz" && p.title_uz ? p.title_uz : p.title,
-      description:
-        language === "uz" && p.description_uz
-          ? p.description_uz
-          : p.description,
-      price: Number(p.price) || 0,
-      image: getImageUrl(p.image),
-      category: p.category,
-      longDescription:
-        language === "uz" && p.description_uz
-          ? p.description_uz
-          : p.description,
-    }));
+    const mapped: FrontProduct[] = apiProducts.map((p) => {
+      const categoryName = typeof p.category === "object"
+        ? (language === "uz" && p.category?.name_uz
+            ? p.category.name_uz
+            : p.category?.name || "")
+        : p.category;
+      
+      return {
+        id: p.id,
+        name: language === "uz" && p.title_uz ? p.title_uz : p.title,
+        description:
+          language === "uz" && p.description_uz
+            ? p.description_uz
+            : p.description,
+        price: Number(p.price) || 0,
+        image: getImageUrl(p.image),
+        category: categoryName,
+        longDescription:
+          language === "uz" && p.description_uz
+            ? p.description_uz
+            : p.description,
+      };
+    });
     setBackendProducts(mapped);
   }, [apiProducts, language]);
 
