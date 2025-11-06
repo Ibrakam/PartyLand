@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -8,29 +9,70 @@ const nextConfig = {
     const projectRoot = dir;
     const srcPath = path.resolve(projectRoot, 'src');
     
-    // Отладочный вывод (можно убрать после проверки)
-    if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
-      console.log('[Next.js Config] Project root:', projectRoot);
-      console.log('[Next.js Config] Source path:', srcPath);
-      console.log('[Next.js Config] Is server:', isServer);
+    // Отладочный вывод
+    console.log('[Next.js Config] Project root:', projectRoot);
+    console.log('[Next.js Config] Source path:', srcPath);
+    console.log('[Next.js Config] Is server:', isServer);
+    
+    // Проверяем существование директории src
+    if (fs.existsSync(srcPath)) {
+      console.log('[Next.js Config] ✓ src directory exists');
+    } else {
+      console.error('[Next.js Config] ✗ src directory NOT FOUND at:', srcPath);
     }
     
-    // Настраиваем алиас для @
-    config.resolve.alias = {
-      ...(config.resolve.alias || {}),
-      '@': srcPath,
-    };
-    
-    // Убедимся, что расширения файлов разрешаются правильно
-    if (!config.resolve.extensions) {
-      config.resolve.extensions = [];
+    // Проверяем существование lib директории
+    const libPath = path.resolve(srcPath, 'lib');
+    if (fs.existsSync(libPath)) {
+      console.log('[Next.js Config] ✓ lib directory exists');
+      const files = fs.readdirSync(libPath);
+      console.log('[Next.js Config] Files in lib:', files);
+    } else {
+      console.error('[Next.js Config] ✗ lib directory NOT FOUND at:', libPath);
     }
-    const extensions = ['.js', '.jsx', '.ts', '.tsx', '.json'];
-    extensions.forEach(ext => {
-      if (!config.resolve.extensions.includes(ext)) {
-        config.resolve.extensions.push(ext);
+    
+    // Настраиваем алиас для @ - используем абсолютный путь
+    const absoluteSrcPath = path.resolve(projectRoot, 'src');
+    
+    // Удаляем старые алиасы, если они есть, чтобы избежать конфликтов
+    const existingAliases = config.resolve.alias || {};
+    const newAliases = {};
+    
+    // Копируем существующие алиасы, кроме @
+    Object.keys(existingAliases).forEach(key => {
+      if (key !== '@') {
+        newAliases[key] = existingAliases[key];
       }
     });
+    
+    // Добавляем наш алиас @
+    newAliases['@'] = absoluteSrcPath;
+    
+    config.resolve.alias = newAliases;
+    
+    console.log('[Next.js Config] Alias @ resolved to:', absoluteSrcPath);
+    console.log('[Next.js Config] All aliases:', Object.keys(config.resolve.alias));
+    
+    // Убедимся, что модули разрешаются из node_modules и src
+    config.resolve.modules = [
+      path.resolve(projectRoot, 'node_modules'),
+      path.resolve(projectRoot, 'src'),
+      'node_modules',
+      ...(config.resolve.modules || []),
+    ].filter((value, index, self) => self.indexOf(value) === index); // Убираем дубликаты
+    
+    // Убедимся, что расширения файлов разрешаются правильно
+    config.resolve.extensions = [
+      '.js',
+      '.jsx',
+      '.ts',
+      '.tsx',
+      '.json',
+      ...(config.resolve.extensions || []),
+    ];
+    
+    // Отключаем полностью разрешение только из node_modules
+    config.resolve.symlinks = true;
     
     return config;
   },
