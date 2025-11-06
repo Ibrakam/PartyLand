@@ -1,17 +1,37 @@
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  webpack: (config) => {
+  webpack: (config, { dir, isServer }) => {
+    // Используем dir из контекста Next.js - это всегда путь к корню проекта
+    const projectRoot = dir;
+    const srcPath = path.resolve(projectRoot, 'src');
+    
+    // Отладочный вывод (можно убрать после проверки)
+    if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
+      console.log('[Next.js Config] Project root:', projectRoot);
+      console.log('[Next.js Config] Source path:', srcPath);
+      console.log('[Next.js Config] Is server:', isServer);
+    }
+    
+    // Настраиваем алиас для @
     config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': path.resolve(__dirname, './src'),
+      ...(config.resolve.alias || {}),
+      '@': srcPath,
     };
+    
+    // Убедимся, что расширения файлов разрешаются правильно
+    if (!config.resolve.extensions) {
+      config.resolve.extensions = [];
+    }
+    const extensions = ['.js', '.jsx', '.ts', '.tsx', '.json'];
+    extensions.forEach(ext => {
+      if (!config.resolve.extensions.includes(ext)) {
+        config.resolve.extensions.push(ext);
+      }
+    });
+    
     return config;
   },
   images: {
