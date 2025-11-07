@@ -1,42 +1,8 @@
-// Определяем API URL динамически при каждом запросе
+// Определяем API URL - используем Next.js API прокси для избежания CORS проблем
 function getApiBaseUrl(): string {
-  // Если указана переменная окружения, используем её
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    const url = process.env.NEXT_PUBLIC_API_URL;
-    // Если это относительный путь, возвращаем как есть
-    if (url.startsWith('/')) {
-      return url;
-    }
-    // Полный URL - проверяем на ngrok
-    if (url.includes('ngrok') || url.includes('ngrok-free.app')) {
-      // Если это ngrok URL, используем прокси
-      return '/api-proxy';
-    }
-    return url.endsWith('/api') ? url : `${url}/api`;
-  }
-  
-  // ВАЖНО: Работаем только на клиенте (в браузере)
-  // На сервере всегда возвращаем относительный путь для прокси
-  if (typeof window === 'undefined') {
-    return '/api-proxy';
-  }
-  
-  // Только на клиенте определяем по hostname
-  const hostname = window.location.hostname;
-  
-  // Если открыто через ngrok, ИСПОЛЬЗУЕМ ПРОКСИ через Next.js
-  if (hostname.includes('ngrok') || hostname.includes('ngrok-free.app')) {
-    // ВСЕГДА используем относительный путь для прокси
-    return '/api-proxy';
-  }
-  
-  // Для локальной разработки используем localhost напрямую
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://127.0.0.1:8000/api';
-  }
-  
-  // По умолчанию используем продакшн сервер
-  return 'http://81.162.55.70:8001/api';
+  // Используем относительный путь через Next.js API прокси
+  // Прокси будет делать запросы на сервере (без CORS ограничений)
+  return '/api-proxy/api';
 }
 
 // Не вычисляем сразу, а получаем динамически
@@ -148,21 +114,12 @@ export interface AdminPaymentDetail {
 export async function getProducts(category?: string): Promise<Product[]> {
   const apiBaseUrl = getApiUrl();
   
-  // Формируем URL
-  let baseUrl: string;
-  if (apiBaseUrl.startsWith('/')) {
-    // Относительный путь - добавляем /api
-    baseUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl : `${apiBaseUrl}/api`;
-  } else {
-    // Абсолютный URL
-    baseUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl : `${apiBaseUrl}/api`;
-  }
-  
+  // apiBaseUrl уже содержит '/api-proxy/api', просто добавляем путь к ресурсу
   const url = category 
-    ? `${baseUrl}/products/?category__slug=${category}`
-    : `${baseUrl}/products/`;
+    ? `${apiBaseUrl}/products/?category__slug=${category}`
+    : `${apiBaseUrl}/products/`;
   
-  console.log('[API] getProducts - hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR', 'apiBaseUrl:', apiBaseUrl, 'baseUrl:', baseUrl, 'final URL:', url);
+  console.log('[API] getProducts - hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR', 'apiBaseUrl:', apiBaseUrl, 'final URL:', url);
   
   try {
     const response = await fetch(url, { 
@@ -189,13 +146,8 @@ export async function getProducts(category?: string): Promise<Product[]> {
 export async function getProduct(id: number): Promise<Product> {
   try {
     const apiBaseUrl = getApiUrl();
-    let baseUrl: string;
-    if (apiBaseUrl.startsWith('/')) {
-      baseUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl : `${apiBaseUrl}/api`;
-    } else {
-      baseUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl : `${apiBaseUrl}/api`;
-    }
-    const url = `${baseUrl}/products/${id}/`;
+    // apiBaseUrl уже содержит '/api-proxy/api'
+    const url = `${apiBaseUrl}/products/${id}/`;
     
     console.log('[API] getProduct - hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR', 'apiBaseUrl:', apiBaseUrl, 'final URL:', url);
     
@@ -221,20 +173,10 @@ export async function getProduct(id: number): Promise<Product> {
 export async function getCategories(): Promise<Category[]> {
   try {
     const apiBaseUrl = getApiUrl();
+    // apiBaseUrl уже содержит '/api-proxy/api'
+    const url = `${apiBaseUrl}/categories/`;
     
-    // Формируем URL
-    let baseUrl: string;
-    if (apiBaseUrl.startsWith('/')) {
-      // Относительный путь - добавляем /api
-      baseUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl : `${apiBaseUrl}/api`;
-    } else {
-      // Абсолютный URL
-      baseUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl : `${apiBaseUrl}/api`;
-    }
-    
-    const url = `${baseUrl}/categories/`;
-    
-    console.log('[API] getCategories - hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR', 'apiBaseUrl:', apiBaseUrl, 'baseUrl:', baseUrl, 'final URL:', url);
+    console.log('[API] getCategories - hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR', 'apiBaseUrl:', apiBaseUrl, 'final URL:', url);
     
     const response = await fetch(url, { 
       method: 'GET',
@@ -274,11 +216,11 @@ export async function createCheckout(payload: CheckoutPayload): Promise<Checkout
 
 export async function getAdminPayments(status = 'under_review'): Promise<AdminPayment[]> {
   const apiBaseUrl = getApiUrl();
-  const url = new URL(`${apiBaseUrl}/admin/payments/`);
+  let url = `${apiBaseUrl}/admin/payments/`;
   if (status) {
-    url.searchParams.set('status', status);
+    url += `?status=${encodeURIComponent(status)}`;
   }
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     cache: 'no-store',
     credentials: 'include',
   });

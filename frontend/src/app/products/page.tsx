@@ -14,22 +14,9 @@ import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
 import { motion } from "framer-motion";
 import { useReducedMotionSafe } from "@/hooks/use-reduced-motion";
 
-// Определяем API URL динамически
+// Определяем API URL - всегда используем продакшн сервер
 function getApiBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    // Если через ngrok, используем прокси через Next.js
-    if (hostname.includes('ngrok') || hostname.includes('ngrok-free.app')) {
-      return '/api-proxy';
-    }
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://127.0.0.1:8000';
-    }
-  }
-  // По умолчанию используем продакшн сервер
+  // Всегда используем продакшн сервер
   return 'http://81.162.55.70:8001';
 }
 
