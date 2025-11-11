@@ -23,7 +23,12 @@ export const CategoryScroll = memo(function CategoryScroll({
   getImageUrl,
 }: CategoryScrollProps) {
   const { prefersReducedMotion, micro } = useReducedMotionSafe();
-  const parentCategories = categories.filter((cat) => !cat.parent);
+  // Исключаем старые тестовые категории
+  const parentCategories = categories.filter((cat) => 
+    !cat.parent && 
+    cat.name !== 'Fruits' && 
+    cat.name !== 'cars'
+  );
 
   return (
     <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 pb-4">

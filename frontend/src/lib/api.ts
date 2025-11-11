@@ -174,7 +174,8 @@ export async function getCategories(): Promise<Category[]> {
   try {
     const apiBaseUrl = getApiUrl();
     // apiBaseUrl уже содержит '/api-proxy/api'
-    const url = `${apiBaseUrl}/categories/`;
+    // Добавляем page_size для получения всех категорий на одной странице
+    const url = `${apiBaseUrl}/categories/?page_size=1000`;
     
     console.log('[API] getCategories - hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR', 'apiBaseUrl:', apiBaseUrl, 'final URL:', url);
     
@@ -192,7 +193,63 @@ export async function getCategories(): Promise<Category[]> {
     
     const data = await response.json();
     // Django REST Framework returns paginated data with a 'results' property
-    return Array.isArray(data) ? data : (data.results || []);
+    const categories = Array.isArray(data) ? data : (data.results || []);
+    
+    // Если есть пагинация и есть следующая страница, получаем все страницы
+    if (data.next && data.count > categories.length) {
+      let allCategories = [...categories];
+      let nextUrl = data.next;
+      
+      // Извлекаем путь и параметры из абсолютного URL
+      const extractPath = (url: string): string => {
+        try {
+          if (url.startsWith('http://') || url.startsWith('https://')) {
+            const urlObj = new URL(url);
+            return urlObj.pathname + urlObj.search;
+          }
+          return url;
+        } catch {
+          // Если не удалось распарсить, просто убираем домен
+          if (url.includes('/api/')) {
+            const match = url.match(/\/api\/.*$/);
+            return match ? match[0] : url;
+          }
+          return url;
+        }
+      };
+      
+      while (nextUrl) {
+        // Извлекаем только путь из URL
+        const path = extractPath(nextUrl);
+        // apiBaseUrl уже содержит '/api-proxy/api', поэтому используем только путь после /api
+        const apiPath = path.startsWith('/api/') ? path.substring(4) : path;
+        const fetchUrl = `${apiBaseUrl}${apiPath}`;
+        
+        console.log('[API] getCategories - fetching next page:', fetchUrl);
+        
+        const nextResponse = await fetch(fetchUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store',
+        });
+        
+        if (!nextResponse.ok) {
+          console.warn('Failed to fetch next page of categories:', nextResponse.status);
+          break;
+        }
+        
+        const nextData = await nextResponse.json();
+        allCategories = [...allCategories, ...(nextData.results || [])];
+        nextUrl = nextData.next;
+      }
+      
+      console.log(`[API] getCategories - loaded ${allCategories.length} categories (total: ${data.count})`);
+      return allCategories;
+    }
+    
+    return categories;
   } catch (error) {
     console.error('Error fetching categories:', error);
     throw error;

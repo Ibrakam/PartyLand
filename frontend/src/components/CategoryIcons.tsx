@@ -19,13 +19,21 @@ export const CategoryIcons = memo(function CategoryIcons({
   getImageUrl,
 }: CategoryIconsProps) {
   const { prefersReducedMotion, micro } = useReducedMotionSafe();
-  // Берем только родительские категории (без parent)
-  const parentCategories = categories.filter((cat) => !cat.parent).slice(0, 9);
+  // Берем только родительские категории (без parent), исключаем старые тестовые категории
+  const parentCategories = categories.filter((cat) => 
+    !cat.parent && 
+    cat.name !== 'Fruits' && 
+    cat.name !== 'cars'
+  );
+
+  if (parentCategories.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-6 px-4 bg-white" aria-label="Категории товаров">
       <div className="container mx-auto max-w-6xl">
-        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-4 md:gap-6">
+        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-4 md:gap-6">
           {parentCategories.map((category) => {
             const categoryName =
               language === "uz" && category.name_uz
