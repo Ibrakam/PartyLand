@@ -1,16 +1,52 @@
 from django.core.management.base import BaseCommand
 from site_app.models import Category
 from django.utils.text import slugify
+import os
+import re
+from django.conf import settings
+
+# Простая транслитерация для кириллицы
+def transliterate(text):
+    """Транслитерация кириллицы в латиницу"""
+    cyrillic_to_latin = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+        'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+        'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+        'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+        'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
+        'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+        'Ф': 'F', 'Х': 'H', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch',
+        'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
+    }
+    result = ''
+    for char in text:
+        result += cyrillic_to_latin.get(char, char)
+    return result
+
+def make_slug(text):
+    """Создает slug из текста с поддержкой кириллицы"""
+    # Сначала транслитерируем
+    transliterated = transliterate(text)
+    # Затем применяем slugify
+    slug = slugify(transliterated)
+    # Если все еще пустой, создаем на основе первых букв
+    if not slug:
+        slug = re.sub(r'[^a-z0-9]+', '-', transliterated.lower())[:50]
+        slug = slug.strip('-')
+    return slug or 'category'
 
 
 class Command(BaseCommand):
     help = 'Add categories and subcategories to the database'
 
     def handle(self, *args, **options):
-        # Определяем структуру категорий
+        # Определяем структуру категорий с изображениями
         categories_data = [
             {
-                'name': 'Круглые шары',
+                'name': 'Воздушные шары из латекса',
+                'image': 'categories/IMG_0829.PNG',  # Используем существующее изображение
                 'subcategories': [
                     'Круглые без рисунка',
                     'Круглые с рисунком',
@@ -18,7 +54,8 @@ class Command(BaseCommand):
                 ]
             },
             {
-                'name': 'Фигурные шары',
+                'name': 'Воздушные шары из фольги',
+                'image': 'categories/IMG_0830.PNG',  # Используем существующее изображение
                 'subcategories': [
                     'Цифры',
                     'Буквы и надписи',
@@ -31,7 +68,8 @@ class Command(BaseCommand):
                 ]
             },
             {
-                'name': 'Тематические шары',
+                'name': 'Композиции из воздушных шаров с гелием',
+                'image': None,  # Можно добавить изображение позже
                 'subcategories': [
                     'Для детей',
                     'Для мальчиков',
@@ -46,7 +84,8 @@ class Command(BaseCommand):
                 ]
             },
             {
-                'name': 'Хлопушки и конфетти',
+                'name': 'Товары для праздника',
+                'image': None,
                 'subcategories': [
                     'Хлопушки',
                     'Конфетти и декор',
@@ -56,6 +95,7 @@ class Command(BaseCommand):
             },
             {
                 'name': 'Свечи и фонтаны',
+                'image': None,
                 'subcategories': [
                     'Свечи для торта',
                     'Фонтаны для торта',
@@ -63,7 +103,8 @@ class Command(BaseCommand):
                 ]
             },
             {
-                'name': 'Гирлянды и фотозоны',
+                'name': 'Гирлянды, фотозоны',
+                'image': None,
                 'subcategories': [
                     'Гирлянды, плакаты, подвески',
                     'Занавес',
@@ -73,7 +114,8 @@ class Command(BaseCommand):
                 ]
             },
             {
-                'name': 'Банты и ленты',
+                'name': 'Ленты и банты',
+                'image': None,
                 'subcategories': [
                     'Банты',
                     'Ленты',
@@ -81,7 +123,8 @@ class Command(BaseCommand):
                 ]
             },
             {
-                'name': 'Одноразовая посуда',
+                'name': 'Сервировка стола',
+                'image': None,
                 'subcategories': [
                     'Одноразовые тарелки',
                     'Одноразовые стаканы',
@@ -93,7 +136,8 @@ class Command(BaseCommand):
                 ]
             },
             {
-                'name': 'Упаковка',
+                'name': 'Праздничная упаковка',
+                'image': None,
                 'subcategories': [
                     'Бумага и пленка',
                     'Пакеты',
@@ -103,7 +147,8 @@ class Command(BaseCommand):
                 ]
             },
             {
-                'name': 'Открытки и аксессуары',
+                'name': 'Праздничная полиграфия',
+                'image': None,
                 'subcategories': [
                     'Открытки',
                     'Конверты и коробки для денег',
@@ -117,13 +162,47 @@ class Command(BaseCommand):
 
         for cat_data in categories_data:
             parent_name = cat_data['name']
-            parent_slug = slugify(parent_name)
+            # Генерируем slug с поддержкой кириллицы
+            parent_slug = make_slug(parent_name)
+            image_path = cat_data.get('image')
             
-            # Создаем или получаем родительскую категорию
-            parent_category, created = Category.objects.get_or_create(
-                slug=parent_slug,
-                defaults={'name': parent_name}
-            )
+            # Проверяем существование файла изображения
+            image_file = None
+            if image_path:
+                full_image_path = os.path.join(settings.MEDIA_ROOT, image_path)
+                if os.path.exists(full_image_path):
+                    image_file = image_path
+                    self.stdout.write(
+                        self.style.SUCCESS(f'  📷 Найдено изображение: {image_path}')
+                    )
+                else:
+                    self.stdout.write(
+                        self.style.WARNING(f'  ⚠ Изображение не найдено: {full_image_path}')
+                    )
+            
+            # Убеждаемся, что slug не пустой
+            if not parent_slug:
+                parent_slug = slugify(parent_name) or f'category-{parent_name[:10]}'
+            
+            # Создаем или обновляем родительскую категорию
+            # Используем update_or_create с проверкой по slug, но если slug пустой или конфликтует, создаем новую
+            try:
+                parent_category = Category.objects.get(slug=parent_slug, parent=None)
+                # Обновляем существующую
+                parent_category.name = parent_name
+                if image_file:
+                    parent_category.image = image_file
+                parent_category.save()
+                created = False
+            except Category.DoesNotExist:
+                # Создаем новую категорию
+                parent_category = Category.objects.create(
+                    name=parent_name,
+                    slug=parent_slug,
+                    image=image_file if image_file else None,
+                    parent=None
+                )
+                created = True
             
             if created:
                 self.stdout.write(
@@ -131,31 +210,32 @@ class Command(BaseCommand):
                 )
                 created_count += 1
             else:
-                # Обновляем название, если оно изменилось
-                if parent_category.name != parent_name:
-                    parent_category.name = parent_name
-                    parent_category.save()
-                    self.stdout.write(
-                        self.style.WARNING(f'↻ Обновлена категория: {parent_name}')
-                    )
-                    updated_count += 1
-                else:
-                    self.stdout.write(
-                        self.style.NOTICE(f'→ Категория уже существует: {parent_name}')
-                    )
+                self.stdout.write(
+                    self.style.WARNING(f'↻ Обновлена категория: {parent_name}')
+                )
+                updated_count += 1
 
             # Создаем подкатегории
             for subcat_name in cat_data['subcategories']:
-                subcat_slug = slugify(subcat_name)
+                # Генерируем slug с поддержкой кириллицы
+                subcat_slug = make_slug(subcat_name)
                 
-                # Проверяем, существует ли уже такая подкатегория с таким же slug
-                subcategory, created = Category.objects.get_or_create(
-                    slug=subcat_slug,
-                    defaults={
-                        'name': subcat_name,
-                        'parent': parent_category
-                    }
-                )
+                # Создаем или обновляем подкатегорию
+                try:
+                    subcategory = Category.objects.get(slug=subcat_slug)
+                    # Обновляем существующую
+                    subcategory.name = subcat_name
+                    subcategory.parent = parent_category
+                    subcategory.save()
+                    created = False
+                except Category.DoesNotExist:
+                    # Создаем новую подкатегорию
+                    subcategory = Category.objects.create(
+                        name=subcat_name,
+                        slug=subcat_slug,
+                        parent=parent_category
+                    )
+                    created = True
                 
                 if created:
                     self.stdout.write(
@@ -163,25 +243,10 @@ class Command(BaseCommand):
                     )
                     created_count += 1
                 else:
-                    # Обновляем родителя и название, если нужно
-                    updated = False
-                    if subcategory.parent != parent_category:
-                        subcategory.parent = parent_category
-                        updated = True
-                    if subcategory.name != subcat_name:
-                        subcategory.name = subcat_name
-                        updated = True
-                    
-                    if updated:
-                        subcategory.save()
-                        self.stdout.write(
-                            self.style.WARNING(f'  ↻ Обновлена подкатегория: {subcat_name}')
-                        )
-                        updated_count += 1
-                    else:
-                        self.stdout.write(
-                            self.style.NOTICE(f'  → Подкатегория уже существует: {subcat_name}')
-                        )
+                    self.stdout.write(
+                        self.style.WARNING(f'  ↻ Обновлена подкатегория: {subcat_name}')
+                    )
+                    updated_count += 1
 
         self.stdout.write(
             self.style.SUCCESS(
