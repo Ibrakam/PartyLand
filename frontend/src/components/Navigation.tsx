@@ -5,6 +5,7 @@ import { isTelegramWebApp } from "@/lib/telegram";
 import { Home, ShoppingCart, Menu, Package, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -50,10 +51,15 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2" aria-label="PartyLand Home">
-            <div className="text-3xl font-bold bg-gradient-to-r from-sweet-magenta to-sweet-purple bg-clip-text text-transparent">
-              🎉 PartyLand
-            </div>
+          <Link href="/" className="flex items-center gap-2 p-2 rounded-xl bg-gradient-to-br from-sweet-pink via-sweet-magenta to-sweet-purple shadow-md hover:shadow-lg transition-shadow" aria-label="PartyLand Home">
+            <Image
+              src="/logo.png"
+              alt="PartyLand Logo"
+              width={120}
+              height={60}
+              className="h-12 w-auto object-contain drop-shadow-sm"
+              priority
+            />
           </Link>
 
           {/* Desktop Menu */}
@@ -114,9 +120,16 @@ export function Navigation() {
                   </SheetTrigger>
                   <SheetContent side="right" className="w-[320px] sm:w-[400px] bg-gradient-to-br from-white via-sweet-pink-light/30 to-sweet-cream border-l-2 border-sweet-pink" id="mobile-navigation">
                     <SheetHeader className="text-left mb-6">
-                      <SheetTitle className="text-2xl font-bold bg-gradient-to-r from-sweet-magenta to-sweet-purple bg-clip-text text-transparent flex items-center gap-2">
-                        <span className="text-3xl" aria-hidden="true">🎉</span>
-                        PartyLand
+                      <SheetTitle className="flex items-center gap-2">
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-sweet-pink via-sweet-magenta to-sweet-purple shadow-md">
+                          <Image
+                            src="/logo.png"
+                            alt="PartyLand Logo"
+                            width={100}
+                            height={50}
+                            className="h-10 w-auto object-contain drop-shadow-sm"
+                          />
+                        </div>
                       </SheetTitle>
                     </SheetHeader>
 

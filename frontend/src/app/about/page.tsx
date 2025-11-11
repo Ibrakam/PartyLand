@@ -50,46 +50,74 @@ export default function AboutPage() {
           </header>
 
           <Card className="bg-white rounded-3xl border-2 border-sweet-pink p-8 md:p-12 space-y-6">
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-foreground">
-                {t("about.whoWeAre")}
-              </h2>
-              <p className="text-muted-foreground leading-relaxed">
-                {t("about.description")}
-              </p>
-            </div>
+            <div className="space-y-6 text-foreground leading-relaxed">
+              <div className="space-y-4">
+                <h2 className="text-3xl md:text-4xl font-bold text-sweet-magenta mb-4">
+                  PARTYLAND — это место, где рождается праздник!
+                </h2>
+                <p className="text-lg">
+                  Мы с любовью создаём атмосферу радости, красоты и волшебства.
+                </p>
+              </div>
 
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-foreground">
-                {t("about.ourMission")}
-              </h2>
-              <p className="text-muted-foreground leading-relaxed">
-                {t("about.missionText")}
-              </p>
-            </div>
+              <div className="space-y-4">
+                <p>
+                  Основанная в октябре 2021 года, компания PARTYLAND специализируется
+                  на продаже воздушных шаров и праздничных товаров для дней рождения
+                  и любых торжественных событий.
+                </p>
+              </div>
 
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-foreground">
-                {t("about.whyChooseUs")}
-              </h2>
-              <ul className="space-y-3 text-muted-foreground">
-                <li className="flex items-start gap-3">
-                  <span className="text-sweet-magenta font-bold mt-1">•</span>
-                  <span>{t("about.feature1")}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-sweet-magenta font-bold mt-1">•</span>
-                  <span>{t("about.feature2")}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-sweet-magenta font-bold mt-1">•</span>
-                  <span>{t("about.feature3")}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-sweet-magenta font-bold mt-1">•</span>
-                  <span>{t("about.feature4")}</span>
-                </li>
-              </ul>
+              <div className="space-y-4">
+                <p className="text-lg font-semibold">
+                  Каждый клиент для нас — не просто покупатель,
+                  а гость большого праздника.
+                </p>
+                <p className="text-lg font-semibold">
+                  Мы дарим не товары, а незабываемые эмоции.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-2xl font-bold text-foreground">
+                  Наши преимущества:
+                </h3>
+                <ul className="space-y-3 text-muted-foreground">
+                  <li className="flex items-start gap-3">
+                    <span className="text-sweet-magenta font-bold mt-1">•</span>
+                    <span>доступные цены</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-sweet-magenta font-bold mt-1">•</span>
+                    <span>высокая скорость обслуживания</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-sweet-magenta font-bold mt-1">•</span>
+                    <span>дизайнерская атмосфера в европейском стиле</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-sweet-magenta font-bold mt-1">•</span>
+                    <span>и главное — искренняя забота о счастье наших клиентов</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t-2 border-sweet-pink">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🎈</span>
+                  <div>
+                    <p className="font-semibold">Адрес:</p>
+                    <p>1-й пр-д Мукими, 23</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🕗</span>
+                  <div>
+                    <p className="font-semibold">Время работы:</p>
+                    <p>ежедневно с 08:00 до 00:00</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </Card>
         </div>

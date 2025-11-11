@@ -1,15 +1,16 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { Navigation } from "@/components/Navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductDetailModal } from "@/components/ProductDetailModal";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { isTelegramWebApp, initTelegramWebApp } from "@/lib/telegram";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getCategories, getProducts, getProduct, Product as ApiProduct, Category as ApiCategory } from "@/lib/api";
-import Image from "next/image";
 import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
 import { motion } from "framer-motion";
 import { useReducedMotionSafe } from "@/hooks/use-reduced-motion";
@@ -43,18 +44,29 @@ type FrontProduct = {
   longDescription?: string;
 };
 
-export default function ProductsPage() {
+function ProductsPageContent() {
   const { t, language } = useLanguage();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const categorySlug = searchParams.get('category');
+  const subcategorySlug = searchParams.get('subcategory');
+  
   const [isTelegram, setIsTelegram] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<FrontProduct | null>(null);
   const [backendCategories, setBackendCategories] = useState<ApiCategory[]>([]);
   const [apiProducts, setApiProducts] = useState<ApiProduct[]>([]);
   const [backendProducts, setBackendProducts] = useState<FrontProduct[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<FrontProduct[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategorySlug, setSelectedCategorySlug] = useState<string | null>(categorySlug);
+  const [selectedSubcategorySlug, setSelectedSubcategorySlug] = useState<string | null>(subcategorySlug);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { prefersReducedMotion, default: defaultAnim, micro } = useReducedMotionSafe();
+
+  // Синхронизируем состояние с URL параметрами
+  useEffect(() => {
+    setSelectedCategorySlug(categorySlug);
+    setSelectedSubcategorySlug(subcategorySlug);
+  }, [categorySlug, subcategorySlug]);
 
   useEffect(() => {
     const isInTelegram = isTelegramWebApp();
@@ -79,8 +91,9 @@ export default function ProductsPage() {
         setError("Не удалось загрузить категории");
       });
     
-    // Загрузка товаров с бэкенда
-    getProducts()
+    // Загрузка товаров с бэкенда - фильтруем по категории если есть
+    const categoryToLoad = categorySlug || undefined;
+    getProducts(categoryToLoad)
       .then((prods: ApiProduct[]) => {
         setApiProducts(prods);
         setLoading(false);
@@ -90,7 +103,7 @@ export default function ProductsPage() {
         setError("Не удалось загрузить товары");
         setLoading(false);
       });
-  }, []);
+  }, [categorySlug]);
 
   useEffect(() => {
     if (apiProducts.length === 0) return;
@@ -106,16 +119,48 @@ export default function ProductsPage() {
     setBackendProducts(mapped);
   }, [apiProducts, language]);
 
-  useEffect(() => {
-    if (selectedCategory) {
-      const filtered = backendProducts.filter(p => 
-        p.category.toLowerCase() === selectedCategory.toLowerCase()
-      );
-      setFilteredProducts(filtered);
-    } else {
-      setFilteredProducts(backendProducts);
+  // Находим выбранную категорию и подкатегории
+  const selectedCategory = useMemo(() => {
+    if (!selectedCategorySlug) return null;
+    return backendCategories.find(cat => cat.slug === selectedCategorySlug && !cat.parent);
+  }, [selectedCategorySlug, backendCategories]);
+
+  const subcategories = useMemo(() => {
+    if (!selectedCategory) return [];
+    return backendCategories.filter(cat => cat.parent === selectedCategory.id);
+  }, [selectedCategory, backendCategories]);
+
+  // Фильтруем продукты
+  const filteredProducts = useMemo(() => {
+    let products = backendProducts;
+    
+    // Фильтр по категории
+    if (selectedCategorySlug) {
+      const category = backendCategories.find(cat => cat.slug === selectedCategorySlug);
+      if (category) {
+        // Если выбрана подкатегория
+        if (selectedSubcategorySlug) {
+          const subcategory = backendCategories.find(cat => cat.slug === selectedSubcategorySlug && cat.parent === category.id);
+          if (subcategory) {
+            products = products.filter(p => {
+              const productCategory = typeof p.category === 'string' ? p.category : '';
+              return productCategory.toLowerCase() === subcategory.name.toLowerCase();
+            });
+          }
+        } else {
+          // Фильтруем по родительской категории и всем подкатегориям
+          const categoryNames = [category.name];
+          subcategories.forEach(sub => categoryNames.push(sub.name));
+          products = products.filter(p => {
+            const productCategory = typeof p.category === 'string' ? p.category : '';
+            return categoryNames.some(name => productCategory.toLowerCase() === name.toLowerCase());
+          });
+        }
+      }
     }
-  }, [selectedCategory, backendProducts]);
+    
+    return products;
+  }, [backendProducts, selectedCategorySlug, selectedSubcategorySlug, backendCategories, subcategories]);
 
   const handleViewDetails = useCallback(async (id: number) => {
     const product = backendProducts.find(p => p.id === id);
@@ -144,6 +189,31 @@ export default function ProductsPage() {
   }, [backendProducts, language]);
 
   const parentCategories = backendCategories.filter(cat => !cat.parent);
+
+  const handleCategorySelect = (slug: string | null) => {
+    setSelectedCategorySlug(slug);
+    setSelectedSubcategorySlug(null);
+    const params = new URLSearchParams(searchParams.toString());
+    if (slug) {
+      params.set('category', slug);
+      params.delete('subcategory');
+    } else {
+      params.delete('category');
+      params.delete('subcategory');
+    }
+    router.push(`/products?${params.toString()}`);
+  };
+
+  const handleSubcategorySelect = (slug: string | null) => {
+    setSelectedSubcategorySlug(slug);
+    const params = new URLSearchParams(searchParams.toString());
+    if (slug) {
+      params.set('subcategory', slug);
+    } else {
+      params.delete('subcategory');
+    }
+    router.push(`/products?${params.toString()}`);
+  };
 
   return (
     <div className={`min-h-screen ${isTelegram ? 'pb-20' : ''}`}>
@@ -196,7 +266,8 @@ export default function ProductsPage() {
       {/* Categories Filter */}
       {backendCategories.length > 0 && (
         <section className="py-6 px-4 bg-white border-b border-sweet-pink/20 sticky top-20 z-40" aria-label="Category filter">
-          <div className="container mx-auto max-w-6xl">
+          <div className="container mx-auto max-w-6xl space-y-4">
+            {/* Parent Categories */}
             <div className="flex flex-wrap items-center gap-3 justify-center" role="list">
               <motion.div
                 role="listitem"
@@ -205,43 +276,99 @@ export default function ProductsPage() {
                 transition={{ duration: micro.duration, ease: micro.ease }}
               >
                 <Button
-                  variant={selectedCategory === null ? "default" : "outline"}
+                  variant={selectedCategorySlug === null ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSelectedCategory(null)}
-                  className={selectedCategory === null 
+                  onClick={() => handleCategorySelect(null)}
+                  className={selectedCategorySlug === null 
                     ? "bg-sweet-magenta hover:bg-sweet-magenta/90 text-white rounded-full focus-visible:ring-2 focus-visible:ring-sweet-magenta focus-visible:ring-offset-2"
                     : "rounded-full border-sweet-pink hover:bg-sweet-pink-light focus-visible:ring-2 focus-visible:ring-sweet-magenta focus-visible:ring-offset-2"
                   }
-                  aria-pressed={selectedCategory === null}
+                  aria-pressed={selectedCategorySlug === null}
                   aria-label={t("categories.all") || "All categories"}
                 >
                   {t("categories.all") || "Все"}
                 </Button>
               </motion.div>
-              {parentCategories.map((category) => (
+              {parentCategories.map((category) => {
+                const categoryName = (language === "uz" && category.name_uz) ? category.name_uz : category.name;
+                const isSelected = selectedCategorySlug === category.slug;
+                return (
+                  <motion.div
+                    key={category.id}
+                    role="listitem"
+                    whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                    whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                    transition={{ duration: micro.duration, ease: micro.ease }}
+                  >
+                    <Button
+                      variant={isSelected ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleCategorySelect(category.slug)}
+                      className={isSelected
+                        ? "bg-sweet-magenta hover:bg-sweet-magenta/90 text-white rounded-full focus-visible:ring-2 focus-visible:ring-sweet-magenta focus-visible:ring-offset-2"
+                        : "rounded-full border-sweet-pink hover:bg-sweet-pink-light focus-visible:ring-2 focus-visible:ring-sweet-magenta focus-visible:ring-offset-2"
+                      }
+                      aria-pressed={isSelected}
+                      aria-label={`Filter by ${categoryName}`}
+                    >
+                      {categoryName}
+                    </Button>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Subcategories */}
+            {selectedCategory && subcategories.length > 0 && (
+              <div className="flex flex-wrap items-center gap-3 justify-center border-t border-sweet-pink/20 pt-4" role="list" aria-label="Subcategories">
                 <motion.div
-                  key={category.id}
                   role="listitem"
                   whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                   transition={{ duration: micro.duration, ease: micro.ease }}
                 >
                   <Button
-                    variant={selectedCategory === category.name ? "default" : "outline"}
+                    variant={selectedSubcategorySlug === null ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setSelectedCategory(category.name)}
-                    className={selectedCategory === category.name
-                      ? "bg-sweet-magenta hover:bg-sweet-magenta/90 text-white rounded-full focus-visible:ring-2 focus-visible:ring-sweet-magenta focus-visible:ring-offset-2"
-                      : "rounded-full border-sweet-pink hover:bg-sweet-pink-light focus-visible:ring-2 focus-visible:ring-sweet-magenta focus-visible:ring-offset-2"
+                    onClick={() => handleSubcategorySelect(null)}
+                    className={selectedSubcategorySlug === null 
+                      ? "bg-sweet-purple hover:bg-sweet-purple/90 text-white rounded-full focus-visible:ring-2 focus-visible:ring-sweet-purple focus-visible:ring-offset-2"
+                      : "rounded-full border-sweet-purple/50 hover:bg-sweet-purple/10 focus-visible:ring-2 focus-visible:ring-sweet-purple focus-visible:ring-offset-2"
                     }
-                    aria-pressed={selectedCategory === category.name}
-                    aria-label={`Filter by ${(language === "uz" && category.name_uz) ? category.name_uz : category.name}`}
+                    aria-pressed={selectedSubcategorySlug === null}
                   >
-                    {(language === "uz" && category.name_uz) ? category.name_uz : category.name}
+                    Все подкатегории
                   </Button>
                 </motion.div>
-              ))}
-            </div>
+                {subcategories.map((subcategory) => {
+                  const subcategoryName = (language === "uz" && subcategory.name_uz) ? subcategory.name_uz : subcategory.name;
+                  const isSelected = selectedSubcategorySlug === subcategory.slug;
+                  return (
+                    <motion.div
+                      key={subcategory.id}
+                      role="listitem"
+                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                      whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                      transition={{ duration: micro.duration, ease: micro.ease }}
+                    >
+                      <Button
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleSubcategorySelect(subcategory.slug)}
+                        className={isSelected
+                          ? "bg-sweet-purple hover:bg-sweet-purple/90 text-white rounded-full focus-visible:ring-2 focus-visible:ring-sweet-purple focus-visible:ring-offset-2"
+                          : "rounded-full border-sweet-purple/50 hover:bg-sweet-purple/10 focus-visible:ring-2 focus-visible:ring-sweet-purple focus-visible:ring-offset-2"
+                        }
+                        aria-pressed={isSelected}
+                        aria-label={`Filter by ${subcategoryName}`}
+                      >
+                        {subcategoryName}
+                      </Button>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -261,7 +388,7 @@ export default function ProductsPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: defaultAnim.duration, ease: defaultAnim.ease }}
-                key={selectedCategory || "all"}
+                key={`${selectedCategorySlug || "all"}-${selectedSubcategorySlug || "all"}`}
                 role="list"
                 aria-label="Product list"
               >
@@ -303,7 +430,7 @@ export default function ProductsPage() {
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                {selectedCategory 
+                {selectedCategorySlug 
                   ? (t("products.noProductsInCategory") || "В этой категории пока нет товаров")
                   : (t("noProducts") || "Товары не найдены")
                 }
@@ -322,5 +449,24 @@ export default function ProductsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="container mx-auto max-w-6xl py-16 px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <ProductsPageContent />
+    </Suspense>
   );
 }

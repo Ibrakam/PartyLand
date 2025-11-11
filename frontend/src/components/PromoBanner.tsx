@@ -1,17 +1,19 @@
 "use client";
 
-import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useReducedMotionSafe } from "@/hooks/use-reduced-motion";
+import Link from "next/link";
 
 interface BannerSlide {
   id: number;
-  image: string;
   title: string;
   subtitle?: string;
+  buttonText?: string;
+  buttonLink?: string;
+  image?: string;
 }
 
 interface PromoBannerProps {
@@ -21,24 +23,39 @@ interface PromoBannerProps {
 const defaultSlides: BannerSlide[] = [
   {
     id: 1,
-    image: "https://cdn.pixabay.com/photo/2022/11/03/19/00/birthday-7568225_1280.png",
-    title: "АКЦИЯ НА ВСЕ ТОВАРЫ",
+    title: "НОВОГОДНЯЯ коллекция",
+    subtitle: "Шары, гирлянды, костюмы и карнавальные аксессуары",
+    buttonText: "Смотреть",
+    buttonLink: "/products",
   },
   {
     id: 2,
-    image: "https://images.pexels.com/photos/4684378/pexels-photo-4684378.jpeg",
     title: "НОВИНКИ СЕЗОНА",
+    subtitle: "Самые актуальные товары для праздников",
+    buttonText: "Смотреть",
+    buttonLink: "/products",
   },
   {
     id: 3,
-    image: "https://cdn.pixabay.com/photo/2022/01/22/15/30/cake-6957626_1280.jpg",
     title: "СКИДКИ ДО 50%",
+    subtitle: "Специальные предложения на все товары",
+    buttonText: "Смотреть",
+    buttonLink: "/products",
   },
 ];
 
 export function PromoBanner({ slides = defaultSlides }: PromoBannerProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { prefersReducedMotion, default: defaultAnim } = useReducedMotionSafe();
+
+  // Генерируем фиксированные позиции снежинок для избежания hydration mismatch
+  const snowflakePositions = useMemo(() => {
+    return Array.from({ length: 20 }, (_, i) => ({
+      left: (i * 17.3) % 100, // Используем детерминированные значения
+      top: (i * 23.7) % 100,
+      duration: 3 + (i % 3) * 0.5,
+    }));
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -60,8 +77,28 @@ export function PromoBanner({ slides = defaultSlides }: PromoBannerProps) {
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
   };
 
+  const currentSlideData = slides[currentSlide];
+
   return (
-    <div className="relative w-full h-64 md:h-80 rounded-2xl overflow-hidden bg-gradient-to-br from-sweet-pink-light to-sweet-purple/30">
+    <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden bg-gradient-to-br from-sweet-pink via-sweet-magenta to-sweet-purple">
+      {/* Снежинки декоративные */}
+      <div className="absolute inset-0 pointer-events-none">
+        {snowflakePositions.map((pos, i) => (
+          <span
+            key={i}
+            className="absolute text-white/30 text-2xl"
+            style={{
+              left: `${pos.left}%`,
+              top: `${pos.top}%`,
+              animation: `float ${pos.duration}s ease-in-out infinite`,
+            }}
+            suppressHydrationWarning
+          >
+            ✱
+          </span>
+        ))}
+      </div>
+
       <AnimatePresence mode="wait">
         <motion.div
           key={currentSlide}
@@ -69,26 +106,39 @@ export function PromoBanner({ slides = defaultSlides }: PromoBannerProps) {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: prefersReducedMotion ? 0 : -100 }}
           transition={{ duration: defaultAnim.duration, ease: defaultAnim.ease }}
-          className="absolute inset-0"
+          className="absolute inset-0 flex items-center"
         >
-          <Image
-            src={slides[currentSlide].image}
-            alt={slides[currentSlide].title}
-            fill
-            className="object-cover"
-            priority={currentSlide === 0}
-            loading={currentSlide === 0 ? undefined : "lazy"}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-sweet-magenta/80 via-sweet-magenta/50 to-transparent" />
-          <div className="absolute inset-0 flex items-center px-6 md:px-12">
-            <div className="relative z-10">
-              <h2 className="text-2xl md:text-4xl font-bold text-white mb-2 drop-shadow-lg">
-                {slides[currentSlide].title}
-              </h2>
-              {slides[currentSlide].subtitle && (
-                <p className="text-lg md:text-xl text-white/90 drop-shadow-md">
-                  {slides[currentSlide].subtitle}
-                </p>
+          <div className="container mx-auto px-6 md:px-12 relative z-10">
+            <div className="flex items-center justify-between">
+              {/* Текст слева */}
+              <div className="flex-1 max-w-2xl">
+                <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
+                  {currentSlideData.title}
+                </h2>
+                {currentSlideData.subtitle && (
+                  <p className="text-lg md:text-xl text-white/95 mb-6 drop-shadow-md">
+                    {currentSlideData.subtitle}
+                  </p>
+                )}
+                {currentSlideData.buttonText && currentSlideData.buttonLink && (
+                  <Link href={currentSlideData.buttonLink}>
+                    <Button
+                      size="lg"
+                      className="bg-white hover:bg-sweet-pink-light text-sweet-magenta rounded-full px-8 py-6 text-lg font-semibold shadow-lg border-2 border-white/50 hover:border-white transition-all"
+                    >
+                      {currentSlideData.buttonText}
+                    </Button>
+                  </Link>
+                )}
+              </div>
+
+              {/* Изображение справа (если есть) */}
+              {currentSlideData.image && (
+                <div className="hidden md:block flex-1 max-w-md">
+                  <div className="relative w-full h-64">
+                    {/* Здесь можно добавить изображение */}
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -130,6 +180,7 @@ export function PromoBanner({ slides = defaultSlides }: PromoBannerProps) {
           />
         ))}
       </div>
+
     </div>
   );
 }

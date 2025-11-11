@@ -5,6 +5,7 @@ import { ProductDetailModal } from "@/components/ProductDetailModal";
 import { SearchBar } from "@/components/SearchBar";
 import { PromoBanner } from "@/components/PromoBanner";
 import { CategoryScroll } from "@/components/CategoryScroll";
+import { CategoryIcons } from "@/components/CategoryIcons";
 import { ProductCardCompact } from "@/components/ProductCardCompact";
 import { Sparkles } from "lucide-react";
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -235,6 +236,15 @@ export default function Home() {
 
         {/* Promo Banner */}
         <PromoBanner />
+
+        {/* Category Icons Section */}
+        {backendCategories.length > 0 && (
+          <CategoryIcons
+            categories={backendCategories}
+            language={language}
+            getImageUrl={getImageUrl}
+          />
+        )}
 
         {/* Category Scroll */}
         {backendCategories.length > 0 && (

@@ -139,6 +139,15 @@ nextjs-portal {
   }
 }
 
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(180deg);
+  }
+}
+
 /* Smooth sheet animations */
 [data-slot="sheet-content"][data-state="open"] {
   animation: slideInFromRight 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
