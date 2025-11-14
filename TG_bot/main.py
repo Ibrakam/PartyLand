@@ -569,7 +569,114 @@ def on_web_app_data(message: types.Message):
             bot.send_message(user_id, tr.get('error', 'Произошла ошибка. Попробуйте позже.'))
             return
         
-        cart_data = json.loads(data_str)
+        data = json.loads(data_str)
+        print(f"Received data from web app for user {user_id}: {data}")
+        
+        # Проверяем тип данных
+        data_type = data.get('type')
+        
+        # Обработка созданного заказа
+        if data_type == 'order_created':
+            order_id = data.get('order_id')
+            total = data.get('total', '—')
+            items = data.get('items', [])
+            address = data.get('address', 'Не указан')
+            comment = data.get('comment')
+            delivery_time = data.get('delivery_time')
+            payment_id = data.get('payment_id')
+            payment_link = data.get('payment_link')
+            payment_deadline_at = data.get('payment_deadline_at')
+            
+            if not order_id:
+                print(f"Error: order_id is missing in order_created data for user {user_id}")
+                bot.send_message(user_id, tr.get('error', 'Произошла ошибка при обработке заказа.'))
+                return
+            
+            try:
+                # Формируем deadline текст
+                deadline_text = format_deadline(payment_deadline_at) if payment_deadline_at else '—'
+                
+                # Формируем сообщение с инструкциями по оплате
+                # Проверяем наличие ключа в словаре локализации
+                if 'payment_instructions' in tr:
+                    message_text = tr['payment_instructions'].format(
+                        order_id=order_id,
+                        total=total,
+                        link=payment_link or tr.get('payment_link_placeholder', 'Ссылка будет отправлена отдельно'),
+                        deadline=deadline_text,
+                    )
+                else:
+                    # Fallback если нет локализации
+                    message_text = (
+                        f"📦 <b>Заказ #{order_id}</b>\n\n"
+                        f"💰 Сумма к оплате: {total}\n"
+                        f"⏰ Срок оплаты: {deadline_text}\n\n"
+                        f"Оплатите по ссылке: {payment_link or 'Ссылка будет отправлена отдельно'}"
+                    )
+                
+                # Если есть payment_link, отправляем с кнопками
+                if payment_link:
+                    bot.send_message(
+                        user_id,
+                        message_text,
+                        reply_markup=kb.ikb_payment_actions(tr, payment_link, order_id),
+                    )
+                else:
+                    bot.send_message(user_id, message_text)
+                
+                # Отправляем детальную информацию о заказе
+                order_details = f"📦 <b>Заказ #{order_id}</b>\n\n"
+                order_details += f"💰 Сумма: {total}\n"
+                order_details += f"📍 Адрес: {address}\n"
+                if delivery_time:
+                    order_details += f"⏰ Время доставки: {delivery_time}\n"
+                if comment:
+                    order_details += f"💬 Комментарий: {comment}\n"
+                order_details += "\n🧾 Состав заказа:\n"
+                for item in items:
+                    item_name = item.get('name', 'Товар')
+                    item_qty = item.get('quantity', 1)
+                    item_price = item.get('price', 0)
+                    try:
+                        item_total = int(float(item_price)) * int(item_qty)
+                        order_details += f"• {item_name} × {item_qty} — {item_total:,} сум\n".replace(",", " ")
+                    except (ValueError, TypeError):
+                        order_details += f"• {item_name} × {item_qty}\n"
+                
+                bot.send_message(user_id, order_details)
+                
+                # Отправляем инструкции по оплате
+                if 'payment_proof_prompt' in tr:
+                    bot.send_message(user_id, tr['payment_proof_prompt'])
+                else:
+                    bot.send_message(user_id, "📸 Отправьте фото чека об оплате для подтверждения заказа.")
+                
+                # Сохраняем заказ в pending_orders для отслеживания
+                remember_pending_order(user_id, {
+                    'order_id': order_id,
+                    'payment_id': payment_id,
+                    'payment_link': payment_link,
+                    'deadline': payment_deadline_at,
+                    'status': 'pending',
+                    'formatted_total': total,
+                })
+                
+                # Очищаем корзину
+                db.clear_cart(user_id)
+                clear_state(user_id)
+                
+                print(f"Successfully processed order {order_id} from Web App for user {user_id}")
+                
+            except Exception as e:
+                print(f"Error processing order data for user {user_id}: {e}")
+                import traceback
+                traceback.print_exc()
+                bot.send_message(user_id, tr.get('error', 'Произошла ошибка при обработке заказа.'))
+            
+            return
+        
+        # Обработка данных корзины (старая логика)
+        cart_data = data
         print(f"Received cart data from web app for user {user_id}: {cart_data}")
         
         # Очищаем текущую корзину

@@ -91,7 +91,7 @@ export function ProductCard({
       whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
       style={{ willChange: prefersReducedMotion ? "opacity" : "transform, opacity" }}
     >
-      <Card className="group relative flex flex-col overflow-hidden rounded-[38px] border border-white/40 bg-[radial-gradient(circle_at_top,#ffe3f4,transparent_70%)] shadow-[0_20px_45px_-30px_rgba(255,93,159,0.65)] transition-all duration-400 hover:shadow-[0_24px_55px_-26px_rgba(255,93,159,0.7)]">
+      <Card className="group relative flex flex-col overflow-hidden rounded-[24px] sm:rounded-[30px] md:rounded-[38px] border border-white/40 bg-[radial-gradient(circle_at_top,#ffe3f4,transparent_70%)] shadow-[0_12px_30px_-20px_rgba(255,93,159,0.6)] sm:shadow-[0_16px_38px_-26px_rgba(255,93,159,0.65)] md:shadow-[0_20px_45px_-30px_rgba(255,93,159,0.65)] transition-all duration-400 hover:shadow-[0_16px_40px_-22px_rgba(255,93,159,0.7)] sm:hover:shadow-[0_20px_48px_-24px_rgba(255,93,159,0.7)] md:hover:shadow-[0_24px_55px_-26px_rgba(255,93,159,0.7)] active:scale-[0.98] touch-manipulation">
         {/* Floating highlight behind the product */}
         <div
           className="pointer-events-none absolute inset-x-6 top-[-10%] h-64 bg-[radial-gradient(circle_at_top,#ffd7ed_0%,rgba(255,215,237,0.0)_70%)]"
@@ -101,20 +101,20 @@ export function ProductCard({
         {/* Favorite Button */}
         <motion.button
           onClick={() => setIsFavorite(!isFavorite)}
-          className="absolute left-6 top-6 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-md transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6cab] focus-visible:ring-offset-2"
+          className="absolute left-3 sm:left-4 md:left-6 top-3 sm:top-4 md:top-6 z-20 flex h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 items-center justify-center rounded-full bg-white shadow-md transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6cab] focus-visible:ring-offset-2"
           aria-label={isFavorite ? favoriteRemoveLabel : favoriteAddLabel}
           whileHover={prefersReducedMotion ? {} : { scale: 1.08 }}
           whileTap={prefersReducedMotion ? {} : { scale: 0.92 }}
           transition={{ duration: micro.duration, ease: micro.ease }}
         >
           <Heart
-            className={`h-5 w-5 ${isFavorite ? "fill-[#ff6cab] text-[#ff6cab]" : "text-[#ff6cab]"}`}
+            className={`h-4 w-4 sm:h-[18px] sm:w-[18px] md:h-5 md:w-5 ${isFavorite ? "fill-[#ff6cab] text-[#ff6cab]" : "text-[#ff6cab]"}`}
           />
         </motion.button>
 
         {/* Product Image zone */}
         <div
-          className="relative z-10 flex w-full flex-col items-center px-8 pt-16 pb-10"
+          className="relative z-10 flex w-full flex-col items-center px-4 sm:px-6 md:px-8 pt-8 sm:pt-12 md:pt-16 pb-6 sm:pb-8 md:pb-10 cursor-pointer active:opacity-90 touch-manipulation"
           onClick={() => onViewDetails?.(id)}
           role="button"
           tabIndex={0}
@@ -126,29 +126,29 @@ export function ProductCard({
           }}
           aria-label={viewDetailsLabel}
         >
-          <div className="absolute inset-x-12 top-8 h-48 rounded-[50%] bg-gradient-to-b from-white/80 via-white/40 to-transparent blur-[50px]" />
-          <div className="relative flex h-56 w-full items-center justify-center rounded-[46px] bg-gradient-to-b from-[#ffe3f4] via-white/65 to-white">
+          <div className="absolute inset-x-6 sm:inset-x-10 md:inset-x-12 top-4 sm:top-6 md:top-8 h-32 sm:h-40 md:h-48 rounded-[50%] bg-gradient-to-b from-white/80 via-white/40 to-transparent blur-[40px] sm:blur-[50px]" />
+          <div className="relative flex h-40 sm:h-48 md:h-56 w-full items-center justify-center rounded-[32px] sm:rounded-[38px] md:rounded-[46px] bg-gradient-to-b from-[#ffe3f4] via-white/65 to-white">
             <Image
               src={image}
               alt={name}
               width={240}
               height={240}
-              className="max-h-[220px] w-auto object-contain transition-transform duration-400 group-hover:scale-[1.04]"
+              className="max-h-[160px] sm:max-h-[200px] md:max-h-[220px] w-auto object-contain transition-transform duration-400 group-hover:scale-[1.04]"
               loading="lazy"
-              sizes="(max-width: 768px) 70vw, 33vw"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           </div>
         </div>
 
         {/* Product Info */}
-        <div className="relative z-10 flex flex-1 flex-col gap-5 px-8 pb-10 pt-4">
-          <div className="space-y-3">
+        <div className="relative z-10 flex flex-1 flex-col gap-3 sm:gap-4 md:gap-5 px-4 sm:px-6 md:px-8 pb-6 sm:pb-8 md:pb-10 pt-3 sm:pt-4">
+          <div className="space-y-2 sm:space-y-3">
             <div
-              className="cursor-pointer space-y-2"
+              className="cursor-pointer space-y-1.5 sm:space-y-2 active:opacity-80 touch-manipulation"
               onClick={() => onViewDetails?.(id)}
             >
-              <h3 className="text-2xl font-semibold text-[#675f5a]">{name}</h3>
-              <p className="text-sm leading-relaxed text-[#8c827c] line-clamp-3">
+              <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-[#675f5a] leading-tight">{name}</h3>
+              <p className="text-xs sm:text-sm leading-relaxed text-[#8c827c] line-clamp-2 sm:line-clamp-3">
                 {description}
               </p>
             </div>
@@ -167,37 +167,37 @@ export function ProductCard({
             )}
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="text-3xl font-bold text-[#ff6cab]">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#ff6cab]">
               {formatUZS(price)}
             </div>
 
             {/* Quantity Selector & Add to Cart */}
             {showQuantity ? (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between rounded-full border border-[#f3dce4] bg-white/95 p-1.5">
+              <div className="flex flex-col gap-3 sm:gap-4">
+                <div className="flex items-center justify-between rounded-full border border-[#f3dce4] bg-white/95 p-1 sm:p-1.5">
                   <motion.button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className={`${gradientAccentClasses} flex h-11 w-11 items-center justify-center text-xl font-semibold text-white transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6cab] focus-visible:ring-offset-2`}
+                    className={`${gradientAccentClasses} flex h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 items-center justify-center text-lg sm:text-xl font-semibold text-white rounded-full transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6cab] focus-visible:ring-offset-2`}
                     aria-label={decreaseLabel}
                     whileHover={prefersReducedMotion ? {} : { scale: 1.08 }}
                     whileTap={prefersReducedMotion ? {} : { scale: 0.92 }}
                     transition={{ duration: micro.duration, ease: micro.ease }}
                   >
-                    <Minus className="h-4 w-4" />
+                    <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </motion.button>
-                  <span className="flex-1 text-center text-lg font-semibold text-[#6f6460]">
+                  <span className="flex-1 text-center text-base sm:text-lg font-semibold text-[#6f6460]">
                     {quantity}
                   </span>
                   <motion.button
                     onClick={() => setQuantity(quantity + 1)}
-                    className={`${gradientAccentClasses} flex h-11 w-11 items-center justify-center text-xl font-semibold text-white transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6cab] focus-visible:ring-offset-2`}
+                    className={`${gradientAccentClasses} flex h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 items-center justify-center text-lg sm:text-xl font-semibold text-white rounded-full transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6cab] focus-visible:ring-offset-2`}
                     aria-label={increaseLabel}
                     whileHover={prefersReducedMotion ? {} : { scale: 1.08 }}
                     whileTap={prefersReducedMotion ? {} : { scale: 0.92 }}
                     transition={{ duration: micro.duration, ease: micro.ease }}
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </motion.button>
                 </div>
                 <motion.div
@@ -206,10 +206,10 @@ export function ProductCard({
                 >
                   <Button
                     onClick={handleAddToCart}
-                    className={`${gradientButtonClasses} py-5 px-6 text-base font-semibold flex items-center justify-center gap-3`}
+                    className={`${gradientButtonClasses} py-3.5 sm:py-4 md:py-5 px-4 sm:px-5 md:px-6 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 sm:gap-3`}
                   >
-                    <ShoppingCart className="h-5 w-5" />
-                    <span>{addToCartLabel}</span>
+                    <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="whitespace-nowrap">{addToCartLabel}</span>
                   </Button>
                 </motion.div>
               </div>
@@ -220,10 +220,10 @@ export function ProductCard({
               >
                 <Button
                   onClick={() => setShowQuantity(true)}
-                  className={`${gradientButtonClasses} py-5 px-6 text-base font-semibold flex items-center justify-center gap-3`}
+                  className={`${gradientButtonClasses} py-3.5 sm:py-4 md:py-5 px-4 sm:px-5 md:px-6 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 sm:gap-3`}
                 >
-                  <ShoppingCart className="h-5 w-5" />
-                  <span>{addToCartLabel}</span>
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="whitespace-nowrap">{addToCartLabel}</span>
                 </Button>
               </motion.div>
             )}

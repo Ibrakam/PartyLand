@@ -250,13 +250,13 @@ function ProductsPageContent() {
       />
 
       {/* Header Section */}
-      <section className="bg-gradient-to-br from-sweet-pink-light via-sweet-pink to-sweet-purple/30 py-12 px-4">
+      <section className="bg-gradient-to-br from-sweet-pink-light via-sweet-pink to-sweet-purple/30 py-8 sm:py-10 md:py-12 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-3 sm:mb-4">
               {t("nav.products")}
             </h1>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-base sm:text-lg text-muted-foreground">
               {t("products.description")}
             </p>
           </div>
@@ -265,108 +265,122 @@ function ProductsPageContent() {
 
       {/* Categories Filter */}
       {backendCategories.length > 0 && (
-        <section className="py-6 px-4 bg-white border-b border-sweet-pink/20 sticky top-20 z-40" aria-label="Category filter">
-          <div className="container mx-auto max-w-6xl space-y-4">
+        <section className="bg-white border-b border-sweet-pink/10 sticky top-20 z-40 shadow-sm touch-pan-x" aria-label="Category filter">
+          <div className="container mx-auto max-w-7xl">
             {/* Parent Categories */}
-            <div className="flex flex-wrap items-center gap-3 justify-center" role="list">
-              <motion.div
-                role="listitem"
-                whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
-                transition={{ duration: micro.duration, ease: micro.ease }}
-              >
-                <Button
-                  variant={selectedCategorySlug === null ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleCategorySelect(null)}
-                  className={selectedCategorySlug === null 
-                    ? "bg-sweet-magenta hover:bg-sweet-magenta/90 text-white rounded-full focus-visible:ring-2 focus-visible:ring-sweet-magenta focus-visible:ring-offset-2"
-                    : "rounded-full border-sweet-pink hover:bg-sweet-pink-light focus-visible:ring-2 focus-visible:ring-sweet-magenta focus-visible:ring-offset-2"
-                  }
-                  aria-pressed={selectedCategorySlug === null}
-                  aria-label={t("categories.all") || "All categories"}
-                >
-                  {t("categories.all") || "Все"}
-                </Button>
-              </motion.div>
-              {parentCategories.map((category) => {
-                const categoryName = (language === "uz" && category.name_uz) ? category.name_uz : category.name;
-                const isSelected = selectedCategorySlug === category.slug;
-                return (
+            <div className="px-3 sm:px-4 py-3 sm:py-4">
+              <div className="overflow-x-auto scrollbar-hide -mx-3 sm:-mx-4 px-3 sm:px-4 snap-x snap-mandatory">
+                <div className="flex items-center gap-2 sm:gap-2.5 min-w-max pb-2" role="list">
                   <motion.div
-                    key={category.id}
                     role="listitem"
+                    className="flex-shrink-0"
                     whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
                     whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                     transition={{ duration: micro.duration, ease: micro.ease }}
                   >
                     <Button
-                      variant={isSelected ? "default" : "outline"}
+                      variant={selectedCategorySlug === null ? "default" : "outline"}
                       size="sm"
-                      onClick={() => handleCategorySelect(category.slug)}
-                      className={isSelected
-                        ? "bg-sweet-magenta hover:bg-sweet-magenta/90 text-white rounded-full focus-visible:ring-2 focus-visible:ring-sweet-magenta focus-visible:ring-offset-2"
-                        : "rounded-full border-sweet-pink hover:bg-sweet-pink-light focus-visible:ring-2 focus-visible:ring-sweet-magenta focus-visible:ring-offset-2"
+                      onClick={() => handleCategorySelect(null)}
+                      className={selectedCategorySlug === null 
+                        ? "bg-gradient-to-r from-sweet-magenta to-sweet-purple hover:from-sweet-magenta/90 hover:to-sweet-purple/90 text-white rounded-full px-4 sm:px-5 py-2.5 sm:py-3 shadow-md font-medium whitespace-nowrap transition-all active:scale-95 touch-manipulation"
+                        : "rounded-full border-2 border-sweet-pink/30 hover:border-sweet-pink hover:bg-sweet-pink-light/50 active:bg-sweet-pink-light active:border-sweet-pink px-4 sm:px-5 py-2.5 sm:py-3 font-medium whitespace-nowrap transition-all bg-white text-foreground hover:text-foreground active:scale-95 touch-manipulation"
                       }
-                      aria-pressed={isSelected}
-                      aria-label={`Filter by ${categoryName}`}
+                      aria-pressed={selectedCategorySlug === null}
+                      aria-label={t("categories.all") || "All categories"}
                     >
-                      {categoryName}
+                      {t("categories.all") || "Все"}
                     </Button>
                   </motion.div>
-                );
-              })}
+                  {parentCategories.map((category) => {
+                    const categoryName = (language === "uz" && category.name_uz) ? category.name_uz : category.name;
+                    const isSelected = selectedCategorySlug === category.slug;
+                    return (
+                      <motion.div
+                        key={category.id}
+                        role="listitem"
+                        className="flex-shrink-0"
+                        whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                        whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                        transition={{ duration: micro.duration, ease: micro.ease }}
+                      >
+                        <Button
+                          variant={isSelected ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleCategorySelect(category.slug)}
+                          className={isSelected
+                            ? "bg-gradient-to-r from-sweet-magenta to-sweet-purple hover:from-sweet-magenta/90 hover:to-sweet-purple/90 text-white rounded-full px-4 sm:px-5 py-2.5 sm:py-3 shadow-md font-medium whitespace-nowrap transition-all active:scale-95 touch-manipulation"
+                            : "rounded-full border-2 border-sweet-pink/30 hover:border-sweet-pink hover:bg-sweet-pink-light/50 active:bg-sweet-pink-light active:border-sweet-pink px-4 sm:px-5 py-2.5 sm:py-3 font-medium whitespace-nowrap transition-all bg-white text-foreground hover:text-foreground active:scale-95 touch-manipulation"
+                          }
+                          aria-pressed={isSelected}
+                          aria-label={`Filter by ${categoryName}`}
+                        >
+                          {categoryName}
+                        </Button>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {/* Subcategories */}
             {selectedCategory && subcategories.length > 0 && (
-              <div className="flex flex-wrap items-center gap-3 justify-center border-t border-sweet-pink/20 pt-4" role="list" aria-label="Subcategories">
-                <motion.div
-                  role="listitem"
-                  whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                  whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
-                  transition={{ duration: micro.duration, ease: micro.ease }}
-                >
-                  <Button
-                    variant={selectedSubcategorySlug === null ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleSubcategorySelect(null)}
-                    className={selectedSubcategorySlug === null 
-                      ? "bg-sweet-purple hover:bg-sweet-purple/90 text-white rounded-full focus-visible:ring-2 focus-visible:ring-sweet-purple focus-visible:ring-offset-2"
-                      : "rounded-full border-sweet-purple/50 hover:bg-sweet-purple/10 focus-visible:ring-2 focus-visible:ring-sweet-purple focus-visible:ring-offset-2"
-                    }
-                    aria-pressed={selectedSubcategorySlug === null}
-                  >
-                    Все подкатегории
-                  </Button>
-                </motion.div>
-                {subcategories.map((subcategory) => {
-                  const subcategoryName = (language === "uz" && subcategory.name_uz) ? subcategory.name_uz : subcategory.name;
-                  const isSelected = selectedSubcategorySlug === subcategory.slug;
-                  return (
-                    <motion.div
-                      key={subcategory.id}
-                      role="listitem"
-                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                      whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
-                      transition={{ duration: micro.duration, ease: micro.ease }}
-                    >
-                      <Button
-                        variant={isSelected ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handleSubcategorySelect(subcategory.slug)}
-                        className={isSelected
-                          ? "bg-sweet-purple hover:bg-sweet-purple/90 text-white rounded-full focus-visible:ring-2 focus-visible:ring-sweet-purple focus-visible:ring-offset-2"
-                          : "rounded-full border-sweet-purple/50 hover:bg-sweet-purple/10 focus-visible:ring-2 focus-visible:ring-sweet-purple focus-visible:ring-offset-2"
-                        }
-                        aria-pressed={isSelected}
-                        aria-label={`Filter by ${subcategoryName}`}
+              <div className="border-t border-sweet-pink/10 bg-gradient-to-b from-white to-sweet-pink-light/20">
+                <div className="px-3 sm:px-4 py-2.5 sm:py-3">
+                  <div className="overflow-x-auto scrollbar-hide -mx-3 sm:-mx-4 px-3 sm:px-4 snap-x snap-mandatory">
+                    <div className="flex items-center gap-2 sm:gap-2.5 min-w-max pb-2" role="list" aria-label="Subcategories">
+                      <motion.div
+                        role="listitem"
+                        className="flex-shrink-0"
+                        whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                        whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                        transition={{ duration: micro.duration, ease: micro.ease }}
                       >
-                        {subcategoryName}
-                      </Button>
-                    </motion.div>
-                  );
-                })}
+                        <Button
+                          variant={selectedSubcategorySlug === null ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleSubcategorySelect(null)}
+                          className={selectedSubcategorySlug === null 
+                            ? "bg-gradient-to-r from-sweet-purple to-sweet-magenta hover:from-sweet-purple/90 hover:to-sweet-magenta/90 text-white rounded-full px-3 sm:px-4 py-2 sm:py-2.5 shadow-md font-medium whitespace-nowrap transition-all text-xs sm:text-sm active:scale-95 touch-manipulation"
+                            : "rounded-full border-2 border-sweet-purple/40 hover:border-sweet-purple hover:bg-sweet-purple/10 active:bg-sweet-purple/20 active:border-sweet-purple px-3 sm:px-4 py-2 sm:py-2.5 font-medium whitespace-nowrap transition-all bg-white text-foreground hover:text-foreground text-xs sm:text-sm active:scale-95 touch-manipulation"
+                          }
+                          aria-pressed={selectedSubcategorySlug === null}
+                        >
+                          Все подкатегории
+                        </Button>
+                      </motion.div>
+                      {subcategories.map((subcategory) => {
+                        const subcategoryName = (language === "uz" && subcategory.name_uz) ? subcategory.name_uz : subcategory.name;
+                        const isSelected = selectedSubcategorySlug === subcategory.slug;
+                        return (
+                          <motion.div
+                            key={subcategory.id}
+                            role="listitem"
+                            className="flex-shrink-0"
+                            whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                            whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                            transition={{ duration: micro.duration, ease: micro.ease }}
+                          >
+                            <Button
+                              variant={isSelected ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handleSubcategorySelect(subcategory.slug)}
+                              className={isSelected
+                                ? "bg-gradient-to-r from-sweet-purple to-sweet-magenta hover:from-sweet-purple/90 hover:to-sweet-magenta/90 text-white rounded-full px-3 sm:px-4 py-2 sm:py-2.5 shadow-md font-medium whitespace-nowrap transition-all text-xs sm:text-sm active:scale-95 touch-manipulation"
+                                : "rounded-full border-2 border-sweet-purple/40 hover:border-sweet-purple hover:bg-sweet-purple/10 active:bg-sweet-purple/20 active:border-sweet-purple px-3 sm:px-4 py-2 sm:py-2.5 font-medium whitespace-nowrap transition-all bg-white text-foreground hover:text-foreground text-xs sm:text-sm active:scale-95 touch-manipulation"
+                              }
+                              aria-pressed={isSelected}
+                              aria-label={`Filter by ${subcategoryName}`}
+                            >
+                              {subcategoryName}
+                            </Button>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -374,17 +388,17 @@ function ProductsPageContent() {
       )}
 
       {/* Products Grid */}
-      <main className="py-16 px-4 bg-white">
-        <div className="container mx-auto max-w-6xl">
+      <main className="py-6 sm:py-8 md:py-12 px-3 sm:px-4 bg-gradient-to-b from-white via-sweet-pink-light/10 to-white min-h-[60vh]">
+        <div className="container mx-auto max-w-7xl">
           {filteredProducts.length > 0 ? (
             <>
-              <div className="mb-6">
-                <p className="text-muted-foreground" aria-live="polite">
-                  {t("products.found") || "Найдено"} {filteredProducts.length} {t("products.items") || "товаров"}
+              <div className="mb-5 sm:mb-6 md:mb-8 px-1 sm:px-2">
+                <p className="text-xs sm:text-sm md:text-base text-muted-foreground font-medium" aria-live="polite">
+                  {t("products.found") || "Найдено"} <span className="text-sweet-magenta font-bold text-base sm:text-lg md:text-xl">{filteredProducts.length}</span> {t("products.items") || "товаров"}
                 </p>
               </div>
               <motion.div 
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: defaultAnim.duration, ease: defaultAnim.ease }}
@@ -396,6 +410,7 @@ function ProductsPageContent() {
                   <motion.div
                     key={product.id}
                     role="listitem"
+                    className="w-full snap-start"
                     initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
@@ -418,18 +433,28 @@ function ProductsPageContent() {
               </motion.div>
             </>
           ) : loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" role="status" aria-label="Loading products">
-              {[...Array(6)].map((_, i) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8" role="status" aria-label="Loading products">
+              {[...Array(8)].map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
           ) : error ? (
-            <div className="text-center py-12" role="alert">
-              <p className="text-red-500">{error}</p>
+            <div className="text-center py-16 md:py-24" role="alert">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 mb-4">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-red-500 font-medium text-lg">{error}</p>
             </div>
           ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
+            <div className="text-center py-16 md:py-24">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sweet-pink-light mb-4">
+                <svg className="w-8 h-8 text-sweet-magenta" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                </svg>
+              </div>
+              <p className="text-muted-foreground text-base md:text-lg font-medium">
                 {selectedCategorySlug 
                   ? (t("products.noProductsInCategory") || "В этой категории пока нет товаров")
                   : (t("noProducts") || "Товары не найдены")

@@ -116,8 +116,57 @@ export default function CheckoutPage() {
       setSnapshotItems(snapshot);
       setSnapshotTotal(total);
       clearCart();
-      setShowInstructions(true);
       setForm(DEFAULT_FORM);
+
+      // Если пользователь в Telegram Web App, отправляем данные в бот и закрываем Web App
+      if (isTelegram) {
+        const webApp = getTelegramWebApp();
+        if (webApp) {
+          const orderData = {
+            type: 'order_created',
+            order_id: response.order_id,
+            total: response.formatted_total || formatUZS(total),
+            payment_id: response.payment_id || null,
+            payment_link: response.payment_link || null,
+            payment_deadline_at: response.payment_deadline_at || null,
+            items: snapshot.map((item) => ({
+              product_id: item.id,
+              quantity: item.quantity,
+              name: item.name,
+              price: item.price,
+            })),
+            address: form.address.trim(),
+            comment: form.comment.trim() || undefined,
+            delivery_time: form.deliveryTime.trim() || undefined,
+          };
+          
+          console.log('[Checkout] Sending order data to Telegram bot:', orderData);
+          
+          try {
+            // Отправляем данные в Telegram бот
+            webApp.sendData(JSON.stringify(orderData));
+            console.log('[Checkout] Order data sent successfully');
+            
+            // Закрываем Web App и возвращаем пользователя в бот
+            setTimeout(() => {
+              webApp.close();
+            }, 500);
+          } catch (error) {
+            console.error('[Checkout] Error sending data to Telegram bot:', error);
+            // Если не удалось отправить данные, все равно закрываем Web App
+            setTimeout(() => {
+              webApp.close();
+            }, 500);
+          }
+          
+          return;
+        } else {
+          console.warn('[Checkout] Telegram WebApp not available');
+        }
+      }
+
+      // Для обычного сайта показываем инструкции
+      setShowInstructions(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Не удалось оформить заказ. Попробуйте ещё раз позже.";
       setError(message);

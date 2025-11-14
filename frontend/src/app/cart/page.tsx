@@ -48,25 +48,8 @@ export default function CartPage() {
       return;
     }
 
-    if (isTelegram) {
-      const webApp = getTelegramWebApp();
-      if (webApp) {
-        const cartData = {
-          items: items.map((item) => ({
-            product_id: item.id,
-            quantity: item.quantity,
-            name: item.name,
-            price: item.price,
-          })),
-          total_price: totalPrice,
-          total_items: totalItems,
-        };
-        webApp.sendData(JSON.stringify(cartData));
-        webApp.close();
-        return;
-      }
-    }
-
+    // Для всех пользователей (включая Telegram Web App) переходим на страницу checkout
+    // Редирект в бот произойдет после подтверждения заказа на странице checkout
     router.push("/checkout");
   };
 
