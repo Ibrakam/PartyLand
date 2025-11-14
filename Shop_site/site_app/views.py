@@ -68,44 +68,139 @@ def send_telegram_notification(telegram_user: Optional[TelegramUser], message: s
 
 
 def notify_admin_new_order(order: Order) -> None:
+    """
+    Отправляет уведомление всем админам в Telegram о новом заказе.
+    """
     bot_token = getattr(settings, 'BOT_TOKEN', '')
-    admin_chat_id = getattr(settings, 'ADMIN_TELEGRAM_CHAT_ID', '')
-    if not bot_token or not admin_chat_id:
+    if not bot_token:
+        logger.warning("BOT_TOKEN not configured, skipping admin notification")
         return
 
-    lines = [
-        f"🔔 Новый заказ #{order.pk}",
-        f"Источник: {order.source_label()}",
-    ]
+    # Получаем всех админов из базы данных
+    admin_users = TelegramUser.objects.filter(is_admin=True)
+    if not admin_users.exists():
+        # Fallback: используем ADMIN_TELEGRAM_CHAT_ID из settings если есть
+        admin_chat_id = getattr(settings, 'ADMIN_TELEGRAM_CHAT_ID', '')
+        if admin_chat_id:
+            admin_ids = [int(admin_chat_id)]
+        else:
+            logger.warning("No admin users found in database and ADMIN_TELEGRAM_CHAT_ID not set")
+            return
+    else:
+        admin_ids = [admin.telegram_id for admin in admin_users]
 
-    if order.customer_name:
+    # Формируем сообщение
+    lines = [
+        f"🔔 <b>Новый заказ #{order.pk}</b>",
+    ]
+    
+    # Определяем источник заказа
+    source_label = order.source_label()
+    if source_label == "Website":
+        lines.append("🌐 Источник: Сайт")
+    elif source_label == "Telegram":
+        lines.append("💬 Источник: Telegram бот")
+    else:
+        lines.append(f"📱 Источник: {source_label}")
+
+    # Информация о клиенте
+    if order.telegram_user:
+        lines.append(f"👤 Клиент: {order.telegram_user.name or f'TG {order.telegram_user.telegram_id}'}")
+        if order.telegram_user.phone:
+            lines.append(f"📞 Телефон: {order.telegram_user.phone}")
+    elif order.customer_name:
         lines.append(f"👤 Имя: {order.customer_name}")
     if order.customer_phone:
         lines.append(f"📞 Контакт: {order.customer_phone}")
+
+    # Адрес доставки
     if order.address:
-        lines.append(f"📍 Адрес: {order.address}")
+        if order.latitude and order.longitude:
+            lines.append(f"📍 Адрес: {order.address} (координаты: {order.latitude:.6f}, {order.longitude:.6f})")
+        else:
+            lines.append(f"📍 Адрес: {order.address}")
+    else:
+        lines.append("📍 Адрес: Не указан")
+
+    # Время доставки
     if order.delivery_time:
         lines.append(f"⏰ Время доставки: {order.delivery_time}")
+    
+    # Комментарий
     if order.payment_comment:
         lines.append(f"💬 Комментарий: {order.payment_comment}")
 
     lines.append("")
-    lines.append("🛍 Товары:")
+    lines.append("🧾 Состав заказа:")
+
+    # Товары из заказа
     for item in order.order_products.all():
         lines.append(
-            f"• {item.product_title} x{item.quantity} — {format_sum(item.total_price)}"
+            f"• {item.product_title} × {item.quantity} — {format_sum(item.total_price)}"
         )
 
     lines.append("")
-    lines.append(f"💰 Итого: {order.formatted_total}")
+    lines.append(f"💰 Итого: <b>{order.formatted_total}</b>")
+    
     if order.payment_link:
         lines.append(f"🔗 Ссылка для оплаты: {order.payment_link}")
+    
+    if order.payment_deadline_at:
+        deadline_str = order.payment_deadline_at.strftime('%d.%m.%Y %H:%M')
+        lines.append(f"⏳ Срок оплаты: {deadline_str}")
 
+    message_text = "\n".join(lines)
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    try:
-        requests.post(url, json={"chat_id": admin_chat_id, "text": "\n".join(lines)}, timeout=10)
-    except requests.RequestException as exc:  # pragma: no cover
-        logger.warning("Failed to notify admin about order %s: %s", order.pk, exc)
+
+    # Получаем активный payment для заказа
+    active_payment = order.payments.filter(is_active=True).first()
+    payment_id = active_payment.pk if active_payment else None
+
+    # Создаем inline клавиатуру с кнопками подтверждения/отклонения
+    reply_markup = None
+    if payment_id:
+        reply_markup = {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "✅ Подтвердить оплату",
+                        "callback_data": f"approve_order:{order.pk}:{payment_id}"
+                    },
+                    {
+                        "text": "❌ Отклонить",
+                        "callback_data": f"reject_order:{order.pk}:{payment_id}"
+                    }
+                ]
+            ]
+        }
+
+    # Отправляем сообщение всем админам
+    success_count = 0
+    for admin_id in admin_ids:
+        try:
+            payload = {
+                "chat_id": admin_id,
+                "text": message_text,
+                "parse_mode": "HTML"
+            }
+            if reply_markup:
+                payload["reply_markup"] = reply_markup
+
+            response = requests.post(
+                url,
+                json=payload,
+                timeout=10
+            )
+            response.raise_for_status()
+            success_count += 1
+            logger.info(f"Admin notification sent to {admin_id} for order {order.pk}")
+        except requests.RequestException as exc:
+            logger.warning(f"Failed to notify admin {admin_id} about order {order.pk}: {exc}")
+    
+    if success_count == 0:
+        logger.error(f"Failed to notify any admin about order {order.pk}")
+    else:
+        logger.info(f"Successfully notified {success_count} admin(s) about order {order.pk}")
 
 
 def calculate_manual_total(cart_items: List[dict]) -> Tuple[Decimal, List[Tuple[Product, int]]]:

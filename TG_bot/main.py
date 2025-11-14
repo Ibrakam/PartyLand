@@ -1005,6 +1005,92 @@ def on_callback(call: types.CallbackQuery):
         admin_state['data']['rejecting_order_id'] = order_id
         return
 
+    # Обработка подтверждения заказа админом (из уведомления о новом заказе)
+    if data.startswith('approve_order:'):
+        if not db.is_admin(user_id):
+            bot.answer_callback_query(call.id, tr.get('not_admin', 'У вас нет прав администратора.'), show_alert=True)
+            return
+        
+        try:
+            parts = data.split(':')
+            order_id = int(parts[1])
+            payment_id = int(parts[2])
+        except (ValueError, IndexError):
+            bot.answer_callback_query(call.id, tr['payment_error'], show_alert=True)
+            return
+        
+        try:
+            # Подтверждаем оплату через API
+            result = api_client.approve_payment_telegram(payment_id, user_id)
+            
+            bot.answer_callback_query(call.id, "✅ Оплата подтверждена")
+            
+            # Обновляем сообщение - убираем кнопки
+            try:
+                bot.edit_message_reply_markup(
+                    chat_id=user_id,
+                    message_id=call.message.message_id,
+                    reply_markup=None
+                )
+            except Exception:
+                pass
+            
+            # Отправляем уведомление клиенту (только если заказ из Telegram)
+            try:
+                # Получаем информацию о заказе через API для получения telegram_user_id
+                order_detail = api_client.get_order_detail(order_id, user_id)
+                telegram_user_id = order_detail.get('telegram_user_id')
+                if telegram_user_id:
+                    client_tr = get_tr(telegram_user_id)
+                    bot.send_message(
+                        telegram_user_id,
+                        client_tr['payment_approved'].format(order_id=order_id)
+                    )
+                else:
+                    # Заказ создан через сайт, клиент не в Telegram
+                    print(f"Order {order_id} has no telegram_user_id, skipping client notification")
+            except Exception as e:
+                print(f"Error notifying client: {e}")
+                import traceback
+                traceback.print_exc()
+            
+            bot.send_message(user_id, f"✅ Заказ #{order_id} подтвержден. Клиент уведомлен.")
+            
+        except Exception as e:
+            print(f"Error approving order: {e}")
+            import traceback
+            traceback.print_exc()
+            bot.answer_callback_query(call.id, tr['payment_error'], show_alert=True)
+        return
+
+    # Обработка отклонения заказа админом (из уведомления о новом заказе)
+    if data.startswith('reject_order:'):
+        if not db.is_admin(user_id):
+            bot.answer_callback_query(call.id, tr.get('not_admin', 'У вас нет прав администратора.'), show_alert=True)
+            return
+        
+        try:
+            parts = data.split(':')
+            order_id = int(parts[1])
+            payment_id = int(parts[2])
+        except (ValueError, IndexError):
+            bot.answer_callback_query(call.id, tr['payment_error'], show_alert=True)
+            return
+        
+        # Сохраняем состояние для получения причины отклонения
+        admin_state = get_state(user_id)
+        admin_state['step'] = 'admin_reject_order'
+        admin_state['data']['rejecting_payment_id'] = payment_id
+        admin_state['data']['rejecting_order_id'] = order_id
+        
+        bot.answer_callback_query(call.id)
+        bot.send_message(
+            user_id,
+            "❌ Введите причину отклонения заказа:",
+            reply_markup=types.ReplyKeyboardRemove()
+        )
+        return
+
     # Обработка удаления товара из корзины
     if data.startswith('remove_cart:'):
         try:
@@ -1558,6 +1644,61 @@ def on_text(message: types.Message):
             return
 
     # Обработка причины отклонения чека
+    # Обработка причины отклонения заказа (из уведомления о новом заказе)
+    if st['step'] == 'admin_reject_order':
+        if not db.is_admin(user_id):
+            bot.send_message(user_id, tr.get('not_admin', 'У вас нет прав администратора.'))
+            clear_state(user_id)
+            return
+        
+        reason = text.strip()
+        if not reason:
+            bot.send_message(user_id, "Пожалуйста, введите причину отклонения:")
+            return
+        
+        payment_id = st['data'].get('rejecting_payment_id')
+        order_id = st['data'].get('rejecting_order_id')
+        
+        if not payment_id or not order_id:
+            bot.send_message(user_id, tr['payment_error'])
+            clear_state(user_id)
+            return
+        
+        try:
+            # Отклоняем оплату через API
+            result = api_client.reject_payment_telegram(payment_id, user_id, reason)
+            
+            bot.send_message(user_id, f"❌ Заказ #{order_id} отклонен. Причина: {reason}")
+            
+            # Отправляем уведомление клиенту (только если заказ из Telegram)
+            try:
+                # Получаем информацию о заказе через API для получения telegram_user_id
+                order_detail = api_client.get_order_detail(order_id, user_id)
+                telegram_user_id = order_detail.get('telegram_user_id')
+                if telegram_user_id:
+                    client_tr = get_tr(telegram_user_id)
+                    bot.send_message(
+                        telegram_user_id,
+                        client_tr['payment_rejected'].format(order_id=order_id, reason=reason)
+                    )
+                else:
+                    # Заказ создан через сайт, клиент не в Telegram
+                    print(f"Order {order_id} has no telegram_user_id, skipping client notification")
+            except Exception as e:
+                print(f"Error notifying client: {e}")
+                import traceback
+                traceback.print_exc()
+            
+            clear_state(user_id)
+            
+        except Exception as e:
+            print(f"Error rejecting order: {e}")
+            import traceback
+            traceback.print_exc()
+            bot.send_message(user_id, tr['payment_error'])
+            clear_state(user_id)
+        return
+
     if st['step'] == 'admin_reject_payment':
         if not db.is_admin(user_id):
             bot.send_message(user_id, t(user_id, 'not_admin'))
