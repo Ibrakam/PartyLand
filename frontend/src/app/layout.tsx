@@ -62,6 +62,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
         <StructuredDataScript />
         <ErrorReporter />
         <Script
