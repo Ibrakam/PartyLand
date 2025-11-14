@@ -46,7 +46,8 @@ export async function POST(
 ) {
   const path = params.path.join('/');
   const body = await request.json();
-  const url = `${API_BACKEND_URL}/${path}`;
+  // Django REST Framework требует слэш в конце URL для POST запросов
+  const url = `${API_BACKEND_URL}/${path}${path.endsWith('/') ? '' : '/'}`;
 
   try {
     const response = await fetch(url, {
@@ -82,7 +83,8 @@ export async function PATCH(
 ) {
   const path = params.path.join('/');
   const body = await request.json();
-  const url = `${API_BACKEND_URL}/${path}`;
+  // Django REST Framework требует слэш в конце URL для PATCH запросов
+  const url = `${API_BACKEND_URL}/${path}${path.endsWith('/') ? '' : '/'}`;
 
   try {
     const response = await fetch(url, {
