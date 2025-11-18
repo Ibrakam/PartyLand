@@ -19,21 +19,16 @@ export const CategoryIcons = memo(function CategoryIcons({
   getImageUrl,
 }: CategoryIconsProps) {
   const { prefersReducedMotion, micro } = useReducedMotionSafe();
-  // Берем только родительские категории (без parent), исключаем старые тестовые категории
-  const parentCategories = categories.filter((cat) => 
-    !cat.parent && 
-    cat.name !== 'Fruits' && 
-    cat.name !== 'cars'
-  );
 
+  const parentCategories = categories.filter((cat) => !cat.parent);
   if (parentCategories.length === 0) {
     return null;
   }
 
   return (
-    <section className="py-6 px-4 bg-white" aria-label="Категории товаров">
+    <section className="py-5" aria-label="Категории товаров">
       <div className="container mx-auto max-w-6xl">
-        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-4 md:gap-6">
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide px-1">
           {parentCategories.map((category) => {
             const categoryName =
               language === "uz" && category.name_uz
@@ -46,28 +41,28 @@ export const CategoryIcons = memo(function CategoryIcons({
                 whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
                 whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                 transition={{ duration: micro.duration, ease: micro.ease }}
-                className="flex flex-col items-center"
+                className="flex flex-col items-center gap-2"
               >
                 <Link
                   href={`/products?category=${category.slug}`}
-                  className="flex flex-col items-center gap-2 group"
+                  className="flex flex-col items-center gap-2"
                   aria-label={`Перейти к категории ${categoryName}`}
                 >
-                  <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors flex items-center justify-center overflow-hidden">
+                  <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[3px] border-sweet-pink-light bg-white shadow-[0_10px_30px_-20px_rgba(0,0,0,0.35)]">
                     {category.image ? (
                       <Image
                         src={getImageUrl(category.image)}
                         alt={categoryName}
                         fill
-                        className="object-cover"
+                        className="object-cover rounded-full"
                         loading="lazy"
                         sizes="80px"
                       />
                     ) : (
-                      <span className="text-2xl md:text-3xl">🎈</span>
+                      <span className="text-2xl">🎈</span>
                     )}
                   </div>
-                  <span className="text-xs md:text-sm text-center text-foreground font-medium group-hover:text-sweet-magenta transition-colors line-clamp-2">
+                  <span className="max-w-[5.5rem] text-center text-xs font-medium text-foreground">
                     {categoryName}
                   </span>
                 </Link>

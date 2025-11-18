@@ -86,6 +86,7 @@ export default function CheckoutPage() {
       cart_items: items.map((item) => ({
         product_id: item.id,
         quantity: item.quantity,
+        with_helium: Boolean(item.withHelium),
       })),
       address: form.address.trim(),
       comment: form.comment.trim() ? form.comment.trim() : undefined,
@@ -99,9 +100,10 @@ export default function CheckoutPage() {
       payload.customer_phone = form.phone.trim();
     }
 
+    let tgUserId: number | undefined;
     if (isTelegram) {
       const webApp = getTelegramWebApp();
-      const tgUserId = webApp?.initDataUnsafe?.user?.id;
+      tgUserId = webApp?.initDataUnsafe?.user?.id;
       if (tgUserId) {
         payload.telegram_user_id = tgUserId;
       }
@@ -129,6 +131,7 @@ export default function CheckoutPage() {
             payment_id: response.payment_id || null,
             payment_link: response.payment_link || null,
             payment_deadline_at: response.payment_deadline_at || null,
+            telegram_user_id: tgUserId,
             items: snapshot.map((item) => ({
               product_id: item.id,
               quantity: item.quantity,
@@ -249,9 +252,10 @@ export default function CheckoutPage() {
 
             <ul className="space-y-2 text-sm sm:text-base">
               {snapshotItems.map((item) => (
-                <li key={`${item.id}-${item.name}`} className="flex justify-between gap-3">
+                <li key={`${item.id}-${item.withHelium ? "helium" : "base"}`} className="flex justify-between gap-3">
                   <span className="text-foreground">
-                    {item.name} × {item.quantity}
+                    {item.name}
+                    {item.variantLabel ? ` · ${item.variantLabel}` : ""} × {item.quantity}
                   </span>
                   <span className="font-semibold text-sweet-magenta">
                     {formatUZS(item.price * item.quantity)}

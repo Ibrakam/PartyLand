@@ -167,7 +167,8 @@ def format_order_for_admin(admin_id: int, order_id: int) -> Optional[Dict]:
     ])
     
     for it in order_data['items']:
-        lines.append(f"• {it['name']} x{it['qty']} — {int(it['price']) * it['qty']} сум")
+        variant_label = " (с гелием)" if it.get('with_helium') else ""
+        lines.append(f"• {it['name']}{variant_label} x{it['qty']} — {int(it['price']) * it['qty']} сум")
     
     lines.append("")
     lines.append(f"💰 Итого: <b>{order_data['sum']} сум</b>")
@@ -1015,6 +1016,7 @@ def on_callback(call: types.CallbackQuery):
             parts = data.split(':')
             order_id = int(parts[1])
             payment_id = int(parts[2])
+            customer_tg_id = int(parts[3]) if len(parts) > 3 else None
         except (ValueError, IndexError):
             bot.answer_callback_query(call.id, tr['payment_error'], show_alert=True)
             return
@@ -1035,26 +1037,18 @@ def on_callback(call: types.CallbackQuery):
             except Exception:
                 pass
             
-            # Отправляем уведомление клиенту (только если заказ из Telegram)
-            try:
-                # Получаем информацию о заказе через API для получения telegram_user_id
-                order_detail = api_client.get_order_detail(order_id, user_id)
-                telegram_user_id = order_detail.get('telegram_user_id')
-                if telegram_user_id:
-                    client_tr = get_tr(telegram_user_id)
+            # Отправляем уведомление клиенту, если известен telegram id
+            if customer_tg_id:
+                try:
+                    client_tr = get_tr(customer_tg_id)
                     bot.send_message(
-                        telegram_user_id,
+                        customer_tg_id,
                         client_tr['payment_approved'].format(order_id=order_id)
                     )
-                else:
-                    # Заказ создан через сайт, клиент не в Telegram
-                    print(f"Order {order_id} has no telegram_user_id, skipping client notification")
-            except Exception as e:
-                print(f"Error notifying client: {e}")
-                import traceback
-                traceback.print_exc()
+                except Exception as e:
+                    print(f"Error notifying customer about approval: {e}")
             
-            bot.send_message(user_id, f"✅ Заказ #{order_id} подтвержден. Клиент уведомлен.")
+            bot.send_message(user_id, f"✅ Заказ #{order_id} подтвержден.")
             
         except Exception as e:
             print(f"Error approving order: {e}")
@@ -1073,6 +1067,7 @@ def on_callback(call: types.CallbackQuery):
             parts = data.split(':')
             order_id = int(parts[1])
             payment_id = int(parts[2])
+            customer_tg_id = int(parts[3]) if len(parts) > 3 else None
         except (ValueError, IndexError):
             bot.answer_callback_query(call.id, tr['payment_error'], show_alert=True)
             return
@@ -1082,6 +1077,7 @@ def on_callback(call: types.CallbackQuery):
         admin_state['step'] = 'admin_reject_order'
         admin_state['data']['rejecting_payment_id'] = payment_id
         admin_state['data']['rejecting_order_id'] = order_id
+        admin_state['data']['rejecting_customer_tg_id'] = customer_tg_id
         
         bot.answer_callback_query(call.id)
         bot.send_message(
@@ -1658,6 +1654,7 @@ def on_text(message: types.Message):
         
         payment_id = st['data'].get('rejecting_payment_id')
         order_id = st['data'].get('rejecting_order_id')
+        customer_tg_id = st['data'].get('rejecting_customer_tg_id')
         
         if not payment_id or not order_id:
             bot.send_message(user_id, tr['payment_error'])
@@ -1671,23 +1668,17 @@ def on_text(message: types.Message):
             bot.send_message(user_id, f"❌ Заказ #{order_id} отклонен. Причина: {reason}")
             
             # Отправляем уведомление клиенту (только если заказ из Telegram)
-            try:
-                # Получаем информацию о заказе через API для получения telegram_user_id
-                order_detail = api_client.get_order_detail(order_id, user_id)
-                telegram_user_id = order_detail.get('telegram_user_id')
-                if telegram_user_id:
-                    client_tr = get_tr(telegram_user_id)
+            if customer_tg_id:
+                try:
+                    client_tr = get_tr(customer_tg_id)
                     bot.send_message(
-                        telegram_user_id,
+                        customer_tg_id,
                         client_tr['payment_rejected'].format(order_id=order_id, reason=reason)
                     )
-                else:
-                    # Заказ создан через сайт, клиент не в Telegram
-                    print(f"Order {order_id} has no telegram_user_id, skipping client notification")
-            except Exception as e:
-                print(f"Error notifying client: {e}")
-                import traceback
-                traceback.print_exc()
+                except Exception as e:
+                    print(f"Error notifying client: {e}")
+                    import traceback
+                    traceback.print_exc()
             
             clear_state(user_id)
             

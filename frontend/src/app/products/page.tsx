@@ -6,6 +6,14 @@ import { Navigation } from "@/components/Navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductDetailModal } from "@/components/ProductDetailModal";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import Image from "next/image";
 import { useEffect, useState, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { isTelegramWebApp, initTelegramWebApp } from "@/lib/telegram";
@@ -14,6 +22,7 @@ import { getCategories, getProducts, getProduct, Product as ApiProduct, Category
 import { ProductCardSkeleton } from "@/components/ProductCardSkeleton";
 import { motion } from "framer-motion";
 import { useReducedMotionSafe } from "@/hooks/use-reduced-motion";
+import { SlidersHorizontal } from "lucide-react";
 
 // Определяем API URL - всегда используем продакшн сервер
 function getApiBaseUrl(): string {
@@ -39,6 +48,8 @@ type FrontProduct = {
   name: string; 
   description: string; 
   price: number; 
+  heliumPrice: number | null;
+  hasHeliumOption: boolean;
   image: string; 
   category: string;
   longDescription?: string;
@@ -60,7 +71,14 @@ function ProductsPageContent() {
   const [selectedSubcategorySlug, setSelectedSubcategorySlug] = useState<string | null>(subcategorySlug);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortOption, setSortOption] = useState("default");
+  const [pageSize, setPageSize] = useState("30");
   const { prefersReducedMotion, default: defaultAnim, micro } = useReducedMotionSafe();
+
+  const translate = (key: string, fallback: string) => {
+    const value = t(key);
+    return value && value !== key ? value : fallback;
+  };
 
   // Синхронизируем состояние с URL параметрами
   useEffect(() => {
@@ -112,6 +130,8 @@ function ProductsPageContent() {
       name: (language === "uz" && p.title_uz) ? p.title_uz : p.title,
       description: (language === "uz" && p.description_uz) ? p.description_uz : p.description,
       price: Number(p.price) || 0,
+      heliumPrice: p.helium_price ? Number(p.helium_price) : null,
+      hasHeliumOption: Boolean(p.has_helium_option),
       image: getImageUrl(p.image),
       category: typeof p.category === 'string' ? p.category : (p.category as ApiCategory)?.name || '',
       longDescription: (language === "uz" && p.description_uz) ? p.description_uz : p.description,
@@ -178,6 +198,8 @@ function ProductsPageContent() {
           name: (language === "uz" && fullProduct.title_uz) ? fullProduct.title_uz : fullProduct.title,
           description: (language === "uz" && fullProduct.description_uz) ? fullProduct.description_uz : fullProduct.description,
           price: Number(fullProduct.price) || 0,
+          heliumPrice: fullProduct.helium_price ? Number(fullProduct.helium_price) : null,
+          hasHeliumOption: Boolean(fullProduct.has_helium_option),
           image: getImageUrl(fullProduct.image),
           category: categoryName || product.category,
           longDescription: (language === "uz" && fullProduct.description_uz) ? fullProduct.description_uz : fullProduct.description,
@@ -269,55 +291,85 @@ function ProductsPageContent() {
           <div className="container mx-auto max-w-7xl">
             {/* Parent Categories */}
             <div className="px-3 sm:px-4 py-3 sm:py-4">
-              <div className="overflow-x-auto scrollbar-hide -mx-3 sm:-mx-4 px-3 sm:px-4 snap-x snap-mandatory">
-                <div className="flex items-center gap-2 sm:gap-2.5 min-w-max pb-2" role="list">
-                  <motion.div
+              <div className="overflow-x-auto scrollbar-hide -mx-3 sm:-mx-4 px-3 sm:px-4">
+                <div className="flex gap-3 sm:gap-4 min-w-max pb-2" role="list">
+                  <motion.button
+                    type="button"
                     role="listitem"
-                    className="flex-shrink-0"
-                    whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                    whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
-                    transition={{ duration: micro.duration, ease: micro.ease }}
+                    onClick={() => handleCategorySelect(null)}
+                    className={`group flex w-24 sm:w-28 flex-col items-center gap-2 rounded-3xl border px-3 py-2 transition-all focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-none focus:outline-none focus:ring-0 ${
+                       selectedCategorySlug === null
+                        ? "bg-white shadow-xl border-transparent after:absolute after:inset-0 after:rounded-3xl after:border-2 after:border-sweet-magenta/60 after:shadow-[0_8px_24px_rgba(255,93,159,0.25)]"
+                        : "bg-white/95 hover:bg-white shadow-sm border-sweet-pink/20"
+                     }`}
+                     aria-pressed={selectedCategorySlug === null}
+                     aria-label={translate("categories.all", "Все категории")}
+                     whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                     whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                     transition={{ duration: micro.duration, ease: micro.ease }}
                   >
-                    <Button
-                      variant={selectedCategorySlug === null ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleCategorySelect(null)}
-                      className={selectedCategorySlug === null 
-                        ? "bg-gradient-to-r from-sweet-magenta to-sweet-purple hover:from-sweet-magenta/90 hover:to-sweet-purple/90 text-white rounded-full px-4 sm:px-5 py-2.5 sm:py-3 shadow-md font-medium whitespace-nowrap transition-all active:scale-95 touch-manipulation"
-                        : "rounded-full border-2 border-sweet-pink/30 hover:border-sweet-pink hover:bg-sweet-pink-light/50 active:bg-sweet-pink-light active:border-sweet-pink px-4 sm:px-5 py-2.5 sm:py-3 font-medium whitespace-nowrap transition-all bg-white text-foreground hover:text-foreground active:scale-95 touch-manipulation"
-                      }
-                      aria-pressed={selectedCategorySlug === null}
-                      aria-label={t("categories.all") || "All categories"}
+                    <span
+                      className={`relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center overflow-hidden rounded-full border-2 bg-white text-2xl transition-all ${
+                        selectedCategorySlug === null
+                          ? "border-sweet-magenta/70 shadow-lg"
+                          : "border-sweet-pink/30 group-hover:border-sweet-magenta/40"
+                      }`}
                     >
-                      {t("categories.all") || "Все"}
-                    </Button>
-                  </motion.div>
+                      <span role="img" aria-hidden="true">
+                        🎉
+                      </span>
+                    </span>
+                    <span className="text-xs sm:text-sm font-semibold text-foreground text-center leading-tight">
+                      {translate("categories.all", "Все категории")}
+                    </span>
+                  </motion.button>
                   {parentCategories.map((category) => {
-                    const categoryName = (language === "uz" && category.name_uz) ? category.name_uz : category.name;
+                    const categoryName =
+                      language === "uz" && category.name_uz ? category.name_uz : category.name;
+                    const imageUrl = category.image ? getImageUrl(category.image) : null;
                     const isSelected = selectedCategorySlug === category.slug;
                     return (
-                      <motion.div
+                      <motion.button
                         key={category.id}
+                        type="button"
                         role="listitem"
-                        className="flex-shrink-0"
+                        onClick={() => handleCategorySelect(category.slug)}
+                        className={`group flex w-24 sm:w-28 flex-col items-center gap-2 rounded-3xl border px-3 py-2 transition-all focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-none focus:outline-none focus:ring-0 ${
+                          isSelected
+                            ? "bg-white shadow-xl border-transparent after:absolute after:inset-0 after:rounded-3xl after:border-2 after:border-sweet-magenta/60 after:shadow-[0_8px_24px_rgba(255,93,159,0.25)]"
+                            : "bg-white/95 hover:bg-white shadow-sm border-sweet-pink/20"
+                        }`}
+                        aria-pressed={isSelected}
+                        aria-label={`Filter by ${categoryName}`}
                         whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
                         whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                         transition={{ duration: micro.duration, ease: micro.ease }}
                       >
-                        <Button
-                          variant={isSelected ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleCategorySelect(category.slug)}
-                          className={isSelected
-                            ? "bg-gradient-to-r from-sweet-magenta to-sweet-purple hover:from-sweet-magenta/90 hover:to-sweet-purple/90 text-white rounded-full px-4 sm:px-5 py-2.5 sm:py-3 shadow-md font-medium whitespace-nowrap transition-all active:scale-95 touch-manipulation"
-                            : "rounded-full border-2 border-sweet-pink/30 hover:border-sweet-pink hover:bg-sweet-pink-light/50 active:bg-sweet-pink-light active:border-sweet-pink px-4 sm:px-5 py-2.5 sm:py-3 font-medium whitespace-nowrap transition-all bg-white text-foreground hover:text-foreground active:scale-95 touch-manipulation"
-                          }
-                          aria-pressed={isSelected}
-                          aria-label={`Filter by ${categoryName}`}
+                        <span
+                          className={`relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center overflow-hidden rounded-full border-2 bg-white text-2xl transition-all ${
+                            isSelected
+                              ? "border-sweet-magenta/70 shadow-lg"
+                              : "border-sweet-pink/30 group-hover:border-sweet-magenta/40"
+                          }`}
                         >
+                          {imageUrl ? (
+                            <Image
+                              src={imageUrl}
+                              alt={categoryName}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 640px) 64px, 80px"
+                            />
+                          ) : (
+                            <span role="img" aria-hidden="true">
+                              🎈
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-foreground text-center leading-tight line-clamp-2">
                           {categoryName}
-                        </Button>
-                      </motion.div>
+                        </span>
+                      </motion.button>
                     );
                   })}
                 </div>
@@ -325,64 +377,87 @@ function ProductsPageContent() {
             </div>
 
             {/* Subcategories */}
-            {selectedCategory && subcategories.length > 0 && (
-              <div className="border-t border-sweet-pink/10 bg-gradient-to-b from-white to-sweet-pink-light/20">
-                <div className="px-3 sm:px-4 py-2.5 sm:py-3">
-                  <div className="overflow-x-auto scrollbar-hide -mx-3 sm:-mx-4 px-3 sm:px-4 snap-x snap-mandatory">
-                    <div className="flex items-center gap-2 sm:gap-2.5 min-w-max pb-2" role="list" aria-label="Subcategories">
-                      <motion.div
+             {selectedCategory && subcategories.length > 0 && (
+               <div className="border-t border-sweet-pink/10 bg-gradient-to-b from-white to-sweet-pink-light/20">
+                <div className="px-3 sm:px-4 py-3 sm:py-4">
+                  <div className="overflow-x-auto scrollbar-hide -mx-3 sm:-mx-4 px-3 sm:px-4" role="list" aria-label="Subcategories">
+                    <div className="flex items-stretch gap-2 sm:gap-3 min-w-max">
+                      <motion.button
+                        type="button"
                         role="listitem"
-                        className="flex-shrink-0"
-                        whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                        whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                        onClick={() => handleSubcategorySelect(null)}
+                        className={`group flex min-w-[170px] items-center justify-between rounded-2xl border bg-white px-4 py-3 text-left shadow-sm transition-all focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-none focus:outline-none focus:ring-0 ${
+                          selectedSubcategorySlug === null
+                            ? "border-sweet-magenta/40 shadow-lg bg-white"
+                            : "border-sweet-pink/20 hover:shadow-md hover:border-sweet-magenta/30"
+                        }`}
+                        aria-pressed={selectedSubcategorySlug === null}
+                        whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                        whileTap={prefersReducedMotion ? {} : { scale: 0.97 }}
                         transition={{ duration: micro.duration, ease: micro.ease }}
                       >
-                        <Button
-                          variant={selectedSubcategorySlug === null ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleSubcategorySelect(null)}
-                          className={selectedSubcategorySlug === null 
-                            ? "bg-gradient-to-r from-sweet-purple to-sweet-magenta hover:from-sweet-purple/90 hover:to-sweet-magenta/90 text-white rounded-full px-3 sm:px-4 py-2 sm:py-2.5 shadow-md font-medium whitespace-nowrap transition-all text-xs sm:text-sm active:scale-95 touch-manipulation"
-                            : "rounded-full border-2 border-sweet-purple/40 hover:border-sweet-purple hover:bg-sweet-purple/10 active:bg-sweet-purple/20 active:border-sweet-purple px-3 sm:px-4 py-2 sm:py-2.5 font-medium whitespace-nowrap transition-all bg-white text-foreground hover:text-foreground text-xs sm:text-sm active:scale-95 touch-manipulation"
-                          }
-                          aria-pressed={selectedSubcategorySlug === null}
-                        >
-                          Все подкатегории
-                        </Button>
-                      </motion.div>
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="text-xs sm:text-sm font-semibold text-foreground leading-snug">
+                            {translate("categories.allSubcategories", "Все подкатегории")}
+                          </p>
+                          <p className="mt-1 text-[11px] sm:text-xs text-muted-foreground">
+                            {translate("categories.allSubcategoriesHint", "Показать все товары")}
+                          </p>
+                        </div>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sweet-pink-light/70 text-lg">
+                          🎊
+                        </span>
+                      </motion.button>
                       {subcategories.map((subcategory) => {
-                        const subcategoryName = (language === "uz" && subcategory.name_uz) ? subcategory.name_uz : subcategory.name;
+                        const subcategoryName =
+                          language === "uz" && subcategory.name_uz
+                            ? subcategory.name_uz
+                            : subcategory.name;
+                        const imageUrl = subcategory.image ? getImageUrl(subcategory.image) : null;
                         const isSelected = selectedSubcategorySlug === subcategory.slug;
                         return (
-                          <motion.div
+                          <motion.button
                             key={subcategory.id}
+                            type="button"
                             role="listitem"
-                            className="flex-shrink-0"
-                            whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                            whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                            onClick={() => handleSubcategorySelect(subcategory.slug)}
+                            className={`group flex min-w-[160px] items-center justify-between rounded-2xl border bg-white px-4 py-3 text-left shadow-sm transition-all focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-none focus:outline-none focus:ring-0 ${
+                              isSelected
+                                ? "border-sweet-magenta/40 shadow-lg"
+                                : "border-sweet-pink/20 hover:shadow-md hover:border-sweet-magenta/30"
+                            }`}
+                            aria-pressed={isSelected}
+                            aria-label={`Filter by ${subcategoryName}`}
+                            whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                            whileTap={prefersReducedMotion ? {} : { scale: 0.97 }}
                             transition={{ duration: micro.duration, ease: micro.ease }}
                           >
-                            <Button
-                              variant={isSelected ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => handleSubcategorySelect(subcategory.slug)}
-                              className={isSelected
-                                ? "bg-gradient-to-r from-sweet-purple to-sweet-magenta hover:from-sweet-purple/90 hover:to-sweet-magenta/90 text-white rounded-full px-3 sm:px-4 py-2 sm:py-2.5 shadow-md font-medium whitespace-nowrap transition-all text-xs sm:text-sm active:scale-95 touch-manipulation"
-                                : "rounded-full border-2 border-sweet-purple/40 hover:border-sweet-purple hover:bg-sweet-purple/10 active:bg-sweet-purple/20 active:border-sweet-purple px-3 sm:px-4 py-2 sm:py-2.5 font-medium whitespace-nowrap transition-all bg-white text-foreground hover:text-foreground text-xs sm:text-sm active:scale-95 touch-manipulation"
-                              }
-                              aria-pressed={isSelected}
-                              aria-label={`Filter by ${subcategoryName}`}
-                            >
+                            <span className="flex-1 min-w-0 pr-2 text-xs sm:text-sm font-semibold text-foreground leading-snug line-clamp-2">
                               {subcategoryName}
-                            </Button>
-                          </motion.div>
+                            </span>
+                            <span className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-sweet-pink-light/60">
+                              {imageUrl ? (
+                                <Image
+                                  src={imageUrl}
+                                  alt={subcategoryName}
+                                  fill
+                                  className="object-cover"
+                                  sizes="40px"
+                                />
+                              ) : (
+                                <span role="img" aria-hidden="true">
+                                  🎈
+                                </span>
+                              )}
+                            </span>
+                          </motion.button>
                         );
                       })}
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+               </div>
+             )}
           </div>
         </section>
       )}
@@ -392,6 +467,47 @@ function ProductsPageContent() {
         <div className="container mx-auto max-w-7xl">
           {filteredProducts.length > 0 ? (
             <>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-5">
+                <Button
+                  variant="outline"
+                  className="rounded-full border-2 border-sweet-pink/30 bg-white px-5 py-2 text-sm font-semibold text-foreground shadow-sm hover:border-sweet-magenta/50 hover:bg-white"
+                >
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                  {translate("products.filter", "Фильтр")}
+                </Button>
+                <div className="flex gap-3">
+                  <Select value={sortOption} onValueChange={setSortOption}>
+                    <SelectTrigger className="w-40 rounded-full border-2 border-sweet-pink/30 bg-white text-sm font-semibold text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sweet-magenta/40 focus-visible:ring-offset-0 hover:border-sweet-magenta/50">
+                      <SelectValue placeholder={translate("products.sortDefault", "По умолчанию")} />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-3xl border-2 border-sweet-pink/20 bg-white/95 text-foreground shadow-xl backdrop-blur-sm">
+                      <SelectItem value="default" className="rounded-2xl font-medium text-foreground focus:bg-sweet-pink-light/70 focus:text-sweet-magenta data-[state=checked]:bg-sweet-pink-light/80 data-[state=checked]:text-sweet-magenta data-[state=checked]:font-semibold">
+                        {translate("products.sortDefault", "По умолчанию")}
+                      </SelectItem>
+                      <SelectItem value="price_asc" className="rounded-2xl font-medium text-foreground focus:bg-sweet-pink-light/70 focus:text-sweet-magenta data-[state=checked]:bg-sweet-pink-light/80 data-[state=checked]:text-sweet-magenta data-[state=checked]:font-semibold">
+                        {translate("products.sortPriceAsc", "Цена ↑")}
+                      </SelectItem>
+                      <SelectItem value="price_desc" className="rounded-2xl font-medium text-foreground focus:bg-sweet-pink-light/70 focus:text-sweet-magenta data-[state=checked]:bg-sweet-pink-light/80 data-[state=checked]:text-sweet-magenta data-[state=checked]:font-semibold">
+                        {translate("products.sortPriceDesc", "Цена ↓")}
+                      </SelectItem>
+                      <SelectItem value="new" className="rounded-2xl font-medium text-foreground focus:bg-sweet-pink-light/70 focus:text-sweet-magenta data-[state=checked]:bg-sweet-pink-light/80 data-[state=checked]:text-sweet-magenta data-[state=checked]:font-semibold">
+                        {translate("products.sortNew", "Новинки")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={pageSize} onValueChange={setPageSize}>
+                    <SelectTrigger className="w-28 rounded-full border-2 border-sweet-pink/30 bg-white text-sm font-semibold text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sweet-magenta/40 focus-visible:ring-offset-0 hover:border-sweet-magenta/50">
+                      <SelectValue placeholder={translate("products.perPage", "По 30")} />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-3xl border-2 border-sweet-pink/20 bg-white/95 text-foreground shadow-xl backdrop-blur-sm">
+                      <SelectItem value="15" className="rounded-2xl font-medium text-foreground focus:bg-sweet-pink-light/70 focus:text-sweet-magenta data-[state=checked]:bg-sweet-pink-light/80 data-[state=checked]:text-sweet-magenta data-[state=checked]:font-semibold">15</SelectItem>
+                      <SelectItem value="30" className="rounded-2xl font-medium text-foreground focus:bg-sweet-pink-light/70 focus:text-sweet-magenta data-[state=checked]:bg-sweet-pink-light/80 data-[state=checked]:text-sweet-magenta data-[state=checked]:font-semibold">30</SelectItem>
+                      <SelectItem value="60" className="rounded-2xl font-medium text-foreground focus:bg-sweet-pink-light/70 focus:text-sweet-magenta data-[state=checked]:bg-sweet-pink-light/80 data-[state=checked]:text-sweet-magenta data-[state=checked]:font-semibold">60</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="mb-5 sm:mb-6 md:mb-8 px-1 sm:px-2">
                 <p className="text-xs sm:text-sm md:text-base text-muted-foreground font-medium" aria-live="polite">
                   {t("products.found") || "Найдено"} <span className="text-sweet-magenta font-bold text-base sm:text-lg md:text-xl">{filteredProducts.length}</span> {t("products.items") || "товаров"}
@@ -424,6 +540,8 @@ function ProductsPageContent() {
                       name={product.name}
                       description={product.description}
                       price={product.price}
+                      heliumPrice={product.heliumPrice}
+                      hasHeliumOption={product.hasHeliumOption}
                       image={product.image}
                       category={product.category}
                       onViewDetails={handleViewDetails}

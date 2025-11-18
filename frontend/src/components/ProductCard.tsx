@@ -1,22 +1,25 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import Image from "next/image";
+import { motion } from "framer-motion";
+import { ShoppingCart, Minus, Plus, Flame } from "lucide-react";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Heart, Plus, Minus } from "lucide-react";
-import { useState } from "react";
-import Image from "next/image";
-import { useCart } from "@/contexts/CartContext";
-import { toast } from "sonner";
-import { formatUZS } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { cn, formatUZS } from "@/lib/utils";
 import { useReducedMotionSafe } from "@/hooks/use-reduced-motion";
+import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "sonner";
 
 interface ProductCardProps {
   id: number;
   name: string;
   description: string;
   price: number;
+  heliumPrice?: number | null;
+  hasHeliumOption?: boolean;
   image: string;
   category: string;
   onAddToCart?: (id: number, quantity: number) => void;
@@ -28,47 +31,89 @@ export function ProductCard({
   name,
   description,
   price,
+  heliumPrice,
+  hasHeliumOption,
   image,
   category,
   onAddToCart,
   onViewDetails,
 }: ProductCardProps) {
-  const [quantity, setQuantity] = useState(1);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [showQuantity, setShowQuantity] = useState(false);
   const { addItem } = useCart();
-  const { prefersReducedMotion, micro } = useReducedMotionSafe();
   const { t, language } = useLanguage();
-  const categoryTags = category
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-  const addToCartLabel =
-    t("product.addToCart") ||
-    (language === "uz" ? "Savatga qo'shish" : "В корзину");
-  const viewDetailsLabel =
-    language === "uz" ? `${name} haqida batafsil` : `Подробнее о ${name}`;
-  const favoriteAddLabel =
-    t("product.favoriteAdd") ||
-    (language === "uz" ? "Sevimlilarga qo'shish" : "Добавить в избранное");
-  const favoriteRemoveLabel =
-    t("product.favoriteRemove") ||
-    (language === "uz"
-      ? "Sevimlilardan olib tashlash"
-      : "Убрать из избранного");
-  const decreaseLabel =
-    t("product.decreaseQuantity") ||
-    (language === "uz" ? "Miqdorni kamaytirish" : "Уменьшить количество");
-  const increaseLabel =
-    t("product.increaseQuantity") ||
-    (language === "uz" ? "Miqdorni oshirish" : "Увеличить количество");
-  const gradientButtonClasses =
-    "w-full rounded-full bg-gradient-to-r from-[#ff9cca] via-[#ff7cba] to-[#ff5ca5] hover:from-[#ff92c4] hover:via-[#ff6fb1] hover:to-[#ff4b9e] text-white shadow-[0_16px_32px_-22px_rgba(255,92,167,0.8)] transition-colors focus-visible:ring-2 focus-visible:ring-[#ff6cab] focus-visible:ring-offset-2";
-  const gradientAccentClasses =
-    "bg-gradient-to-r from-[#ff9cca] via-[#ff7cba] to-[#ff5ca5]";
+  const { prefersReducedMotion, micro } = useReducedMotionSafe();
+
+  const [quantity, setQuantity] = useState(1);
+  const [selectedOption, setSelectedOption] = useState<"base" | "helium">("base");
+
+  const translate = (key: string, fallback: string) => {
+    const value = t(key);
+    return value && value !== key ? value : fallback;
+  };
+
+  const optionWithoutHelium = translate(
+    "product.optionWithoutHelium",
+    language === "uz" ? "Geliysiz" : "Без гелия"
+  );
+  const optionWithHelium = translate(
+    "product.optionWithHelium",
+    language === "uz" ? "Geli bilan" : "С гелием"
+  );
+  const addToCartLabel = translate(
+    "product.addToCart",
+    language === "uz" ? "Savatga qo'shish" : "В корзину"
+  );
+  const quickViewLabel = translate(
+    "product.viewDetails",
+    language === "uz" ? "Batafsil" : "Подробнее"
+  );
+  const decreaseLabel = translate(
+    "product.decreaseQuantity",
+    language === "uz" ? "Kamaytirish" : "Уменьшить количество"
+  );
+  const increaseLabel = translate(
+    "product.increaseQuantity",
+    language === "uz" ? "Ko'paytirish" : "Увеличить количество"
+  );
+
+  const options = useMemo(() => {
+    const base = {
+      key: "base" as const,
+      label: optionWithoutHelium,
+      price,
+      withHelium: false,
+    };
+    const heliumAvailable =
+      Boolean(hasHeliumOption) && heliumPrice !== null && heliumPrice !== undefined;
+    if (heliumAvailable) {
+      return [
+        base,
+        {
+          key: "helium" as const,
+          label: optionWithHelium,
+          price: heliumPrice ?? price,
+          withHelium: true,
+        },
+      ];
+    }
+    return [base];
+  }, [hasHeliumOption, heliumPrice, optionWithHelium, optionWithoutHelium, price]);
+
+  const selected = options.find((opt) => opt.key === selectedOption) ?? options[0];
+  const displayPrice = selected.price;
 
   const handleAddToCart = () => {
-    addItem({ id, name, price, image }, quantity);
+    addItem(
+      {
+        id,
+        name,
+        price: displayPrice,
+        image,
+        withHelium: selected.withHelium,
+        variantLabel: selected.label,
+      },
+      quantity
+    );
+
     const successMessage =
       language === "uz"
         ? `${quantity} ta ${name} savatchaga qo'shildi!`
@@ -78,7 +123,6 @@ export function ProductCard({
     if (onAddToCart) {
       onAddToCart(id, quantity);
     }
-    setShowQuantity(false);
     setQuantity(1);
   };
 
@@ -87,146 +131,102 @@ export function ProductCard({
       initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: micro.duration, ease: micro.ease }}
-      whileHover={prefersReducedMotion ? {} : { scale: 1.01 }}
-      whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
-      style={{ willChange: prefersReducedMotion ? "opacity" : "transform, opacity" }}
+      whileHover={prefersReducedMotion ? {} : { y: -4 }}
+      className="h-full"
     >
-      <Card className="group relative flex flex-col overflow-hidden rounded-[24px] sm:rounded-[30px] md:rounded-[38px] border border-white/40 bg-[radial-gradient(circle_at_top,#ffe3f4,transparent_70%)] shadow-[0_12px_30px_-20px_rgba(255,93,159,0.6)] sm:shadow-[0_16px_38px_-26px_rgba(255,93,159,0.65)] md:shadow-[0_20px_45px_-30px_rgba(255,93,159,0.65)] transition-all duration-400 hover:shadow-[0_16px_40px_-22px_rgba(255,93,159,0.7)] sm:hover:shadow-[0_20px_48px_-24px_rgba(255,93,159,0.7)] md:hover:shadow-[0_24px_55px_-26px_rgba(255,93,159,0.7)] active:scale-[0.98] touch-manipulation">
-        {/* Floating highlight behind the product */}
-        <div
-          className="pointer-events-none absolute inset-x-6 top-[-10%] h-64 bg-[radial-gradient(circle_at_top,#ffd7ed_0%,rgba(255,215,237,0.0)_70%)]"
-          aria-hidden="true"
-        />
-
-        {/* Favorite Button */}
-        <motion.button
-          onClick={() => setIsFavorite(!isFavorite)}
-          className="absolute left-3 sm:left-4 md:left-6 top-3 sm:top-4 md:top-6 z-20 flex h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 items-center justify-center rounded-full bg-white shadow-md transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6cab] focus-visible:ring-offset-2"
-          aria-label={isFavorite ? favoriteRemoveLabel : favoriteAddLabel}
-          whileHover={prefersReducedMotion ? {} : { scale: 1.08 }}
-          whileTap={prefersReducedMotion ? {} : { scale: 0.92 }}
-          transition={{ duration: micro.duration, ease: micro.ease }}
-        >
-          <Heart
-            className={`h-4 w-4 sm:h-[18px] sm:w-[18px] md:h-5 md:w-5 ${isFavorite ? "fill-[#ff6cab] text-[#ff6cab]" : "text-[#ff6cab]"}`}
-          />
-        </motion.button>
-
-        {/* Product Image zone */}
-        <div
-          className="relative z-10 flex w-full flex-col items-center px-4 sm:px-6 md:px-8 pt-8 sm:pt-12 md:pt-16 pb-6 sm:pb-8 md:pb-10 cursor-pointer active:opacity-90 touch-manipulation"
+      <Card className="flex h-full flex-col overflow-hidden rounded-[28px] border border-sweet-pink/20 bg-white shadow-[0_16px_40px_-28px_rgba(255,93,159,0.55)] transition-shadow hover:shadow-[0_26px_56px_-32px_rgba(255,93,159,0.55)]">
+        <button
+          type="button"
           onClick={() => onViewDetails?.(id)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onViewDetails?.(id);
-            }
-          }}
-          aria-label={viewDetailsLabel}
+          aria-label={quickViewLabel}
+          className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-sweet-pink-light/30 via-white to-white"
         >
-          <div className="absolute inset-x-6 sm:inset-x-10 md:inset-x-12 top-4 sm:top-6 md:top-8 h-32 sm:h-40 md:h-48 rounded-[50%] bg-gradient-to-b from-white/80 via-white/40 to-transparent blur-[40px] sm:blur-[50px]" />
-          <div className="relative flex h-40 sm:h-48 md:h-56 w-full items-center justify-center rounded-[32px] sm:rounded-[38px] md:rounded-[46px] bg-gradient-to-b from-[#ffe3f4] via-white/65 to-white">
-            <Image
-              src={image}
-              alt={name}
-              width={240}
-              height={240}
-              className="max-h-[160px] sm:max-h-[200px] md:max-h-[220px] w-auto object-contain transition-transform duration-400 group-hover:scale-[1.04]"
-              loading="lazy"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
+          <Image
+            src={image}
+            alt={name}
+            fill
+            sizes="(max-width: 768px) 100vw, 25vw"
+            className="object-contain transition-transform duration-300 hover:scale-105"
+          />
+          <span className="absolute left-4 top-4 rounded-full bg-white/90 px-4 py-1 text-xs font-semibold text-sweet-magenta shadow-sm">
+            {category}
+          </span>
+        </button>
+
+        <div className="flex flex-1 flex-col gap-4 p-6">
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-foreground line-clamp-2">{name}</h3>
+            <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
           </div>
-        </div>
 
-        {/* Product Info */}
-        <div className="relative z-10 flex flex-1 flex-col gap-3 sm:gap-4 md:gap-5 px-4 sm:px-6 md:px-8 pb-6 sm:pb-8 md:pb-10 pt-3 sm:pt-4">
-          <div className="space-y-2 sm:space-y-3">
-            <div
-              className="cursor-pointer space-y-1.5 sm:space-y-2 active:opacity-80 touch-manipulation"
-              onClick={() => onViewDetails?.(id)}
-            >
-              <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-[#675f5a] leading-tight">{name}</h3>
-              <p className="text-xs sm:text-sm leading-relaxed text-[#8c827c] line-clamp-2 sm:line-clamp-3">
-                {description}
-              </p>
-            </div>
-
-            {categoryTags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {categoryTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-[#f4e6dd] px-4 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#b39d8b]"
+          {options.length > 1 && (
+            <div className="rounded-full bg-sweet-pink-light/60 p-1 text-xs font-semibold text-foreground">
+              <div className="grid grid-cols-2 gap-1">
+                {options.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => setSelectedOption(option.key)}
+                    className={cn(
+                      "flex items-center justify-center gap-1 rounded-full px-3 py-1.5 transition-colors",
+                      selectedOption === option.key
+                        ? "bg-white text-sweet-magenta shadow-sm"
+                        : "text-muted-foreground hover:bg-white/70"
+                    )}
                   >
-                    {tag}
-                  </span>
+                    {option.withHelium && <Flame className="h-3 w-3 text-[#ff6cab]" />}
+                    {option.label}
+                  </button>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          <div className="flex flex-col gap-3 sm:gap-4">
-            <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#ff6cab]">
-              {formatUZS(price)}
+          <div className="mt-auto space-y-4">
+            <div className="flex items-baseline gap-3">
+              <span className="text-2xl font-bold text-sweet-magenta">
+                {formatUZS(displayPrice)}
+              </span>
+              {options.length > 1 && (
+                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {selected.label}
+                </span>
+              )}
             </div>
 
-            {/* Quantity Selector & Add to Cart */}
-            {showQuantity ? (
-              <div className="flex flex-col gap-3 sm:gap-4">
-                <div className="flex items-center justify-between rounded-full border border-[#f3dce4] bg-white/95 p-1 sm:p-1.5">
-                  <motion.button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className={`${gradientAccentClasses} flex h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 items-center justify-center text-lg sm:text-xl font-semibold text-white rounded-full transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6cab] focus-visible:ring-offset-2`}
-                    aria-label={decreaseLabel}
-                    whileHover={prefersReducedMotion ? {} : { scale: 1.08 }}
-                    whileTap={prefersReducedMotion ? {} : { scale: 0.92 }}
-                    transition={{ duration: micro.duration, ease: micro.ease }}
-                  >
-                    <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </motion.button>
-                  <span className="flex-1 text-center text-base sm:text-lg font-semibold text-[#6f6460]">
-                    {quantity}
-                  </span>
-                  <motion.button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className={`${gradientAccentClasses} flex h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 items-center justify-center text-lg sm:text-xl font-semibold text-white rounded-full transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6cab] focus-visible:ring-offset-2`}
-                    aria-label={increaseLabel}
-                    whileHover={prefersReducedMotion ? {} : { scale: 1.08 }}
-                    whileTap={prefersReducedMotion ? {} : { scale: 0.92 }}
-                    transition={{ duration: micro.duration, ease: micro.ease }}
-                  >
-                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </motion.button>
-                </div>
-                <motion.div
-                  whileHover={prefersReducedMotion ? {} : { scale: 1.01 }}
-                  whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
-                >
-                  <Button
-                    onClick={handleAddToCart}
-                    className={`${gradientButtonClasses} py-3.5 sm:py-4 md:py-5 px-4 sm:px-5 md:px-6 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 sm:gap-3`}
-                  >
-                    <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <span className="whitespace-nowrap">{addToCartLabel}</span>
-                  </Button>
-                </motion.div>
-              </div>
-            ) : (
-              <motion.div
-                whileHover={prefersReducedMotion ? {} : { scale: 1.01 }}
-                whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
-              >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center rounded-full border border-sweet-pink/40 bg-white px-2 py-1.5 shadow-inner">
                 <Button
-                  onClick={() => setShowQuantity(true)}
-                  className={`${gradientButtonClasses} py-3.5 sm:py-4 md:py-5 px-4 sm:px-5 md:px-6 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 sm:gap-3`}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full text-sweet-magenta hover:bg-sweet-pink-light/70"
+                  onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                  aria-label={decreaseLabel}
                 >
-                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="whitespace-nowrap">{addToCartLabel}</span>
+                  <Minus className="h-4 w-4" />
                 </Button>
-              </motion.div>
-            )}
+                <span className="w-10 text-center text-base font-semibold text-foreground" aria-live="polite">
+                  {quantity}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full text-sweet-magenta hover:bg-sweet-pink-light/70"
+                  onClick={() => setQuantity((prev) => prev + 1)}
+                  aria-label={increaseLabel}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <Button
+                className="flex-1 rounded-full bg-gradient-to-r from-[#ff9cca] via-[#ff7cba] to-[#ff5ca5] py-3 font-semibold text-white shadow-[0_14px_32px_-22px_rgba(255,92,167,0.7)] hover:from-[#ff92c4] hover:via-[#ff6fb1] hover:to-[#ff4b9e]"
+                onClick={handleAddToCart}
+              >
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                {addToCartLabel}
+              </Button>
+            </div>
           </div>
         </div>
       </Card>

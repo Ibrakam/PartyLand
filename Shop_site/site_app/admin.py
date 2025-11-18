@@ -24,9 +24,24 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'title_uz', 'category', 'price', 'created_at')
-    list_filter = ('category',)
+    list_display = ('id', 'title', 'title_uz', 'category', 'price', 'helium_price', 'has_helium_option', 'created_at')
+    list_filter = ('category', 'has_helium_option')
     search_fields = ('title', 'title_uz')
+    fieldsets = (
+        (None, {
+            'fields': ('title', 'title_uz', 'category', 'price', 'image')
+        }),
+        ('Описание', {
+            'fields': ('description', 'description_uz')
+        }),
+        ('Настройки гелия', {
+            'fields': ('has_helium_option', 'helium_price')
+        }),
+        ('Служебные', {
+            'fields': ('created_at',),
+        }),
+    )
+    readonly_fields = ('created_at',)
 
 
 @admin.register(CartItem)

@@ -30,7 +30,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'title', 'title_uz', 'price', 'category', 'image']
+        fields = ['id', 'title', 'title_uz', 'price', 'helium_price', 'has_helium_option', 'category', 'image']
     
     def get_image(self, obj):
         if obj.image:
@@ -48,7 +48,19 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'title', 'title_uz', 'description', 'description_uz', 'price', 'image', 'category', 'created_at']
+        fields = [
+            'id',
+            'title',
+            'title_uz',
+            'description',
+            'description_uz',
+            'price',
+            'helium_price',
+            'has_helium_option',
+            'image',
+            'category',
+            'created_at',
+        ]
     
     def get_image(self, obj):
         if obj.image:
@@ -71,7 +83,7 @@ class CartItemCreateSerializer(serializers.ModelSerializer):
 class ProductShortSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['id', 'title', 'title_uz', 'price']
+        fields = ['id', 'title', 'title_uz', 'price', 'helium_price', 'has_helium_option']
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -113,7 +125,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderProduct
-        fields = ['id', 'product', 'product_title', 'quantity', 'price_uzs', 'total']
+        fields = ['id', 'product', 'product_title', 'quantity', 'price_uzs', 'with_helium', 'total']
 
     def get_total(self, obj):
         return obj.total_price
@@ -211,6 +223,7 @@ class OrderSerializer(serializers.ModelSerializer):
     payments = serializers.SerializerMethodField()
     formatted_total = serializers.SerializerMethodField()
     status_history = serializers.SerializerMethodField()
+    telegram_user_id = serializers.IntegerField(source='telegram_user.telegram_id', read_only=True)
 
     class Meta:
         model = Order
@@ -229,6 +242,7 @@ class OrderSerializer(serializers.ModelSerializer):
              'customer_phone',
              'address',
              'delivery_time',
+            'telegram_user_id',
             'items',
             'payments',
             'status_history',
@@ -256,6 +270,7 @@ class OrderSerializer(serializers.ModelSerializer):
 class CheckoutItemSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
     quantity = serializers.IntegerField(min_value=1)
+    with_helium = serializers.BooleanField(required=False, default=False)
 
 
 class CheckoutRequestSerializer(serializers.Serializer):

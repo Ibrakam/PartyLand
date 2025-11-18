@@ -274,6 +274,7 @@ def get_order_with_items(order_id: int) -> Optional[Dict]:
             'name': order_product.product_title or (product.title if product else 'Товар'),
             'qty': order_product.quantity,
             'price': float(order_product.price_uzs),
+            'with_helium': order_product.with_helium,
         })
     
     # Получаем имя и телефон - сначала из customer_name/customer_phone, потом из telegram_user

@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatUZS } from "@/lib/utils";
-import { getTelegramWebApp, isTelegramWebApp } from "@/lib/telegram";
+import { isTelegramWebApp } from "@/lib/telegram";
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, totalItems, totalPrice } = useCart();
@@ -24,6 +24,11 @@ export default function CartPage() {
     setIsTelegram(isTelegramWebApp());
   }, []);
 
+  const translate = (key: string, fallback: string) => {
+    const value = t(key);
+    return value && value !== key ? value : fallback;
+  };
+
   const itemsCountLabel = useMemo(() => {
     const count = totalItems;
     const mod10 = count % 10;
@@ -32,13 +37,13 @@ export default function CartPage() {
     const itemWord =
       language === "ru"
         ? mod10 === 1 && mod100 !== 11
-          ? t("cart.itemSingular")
+          ? translate("cart.itemSingular", "товар")
           : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
-            ? t("cart.itemFew")
-            : t("cart.itemPlural")
+            ? translate("cart.itemFew", "товара")
+            : translate("cart.itemPlural", "товаров")
         : count === 1
-          ? t("cart.itemSingular")
-          : t("cart.itemPlural");
+          ? translate("cart.itemSingular", language === "uz" ? "ta" : "item")
+          : translate("cart.itemPlural", language === "uz" ? "ta" : "items");
 
     return `${count} ${itemWord} ${t("cart.itemsSuffix")}`;
   }, [language, t, totalItems]);
@@ -48,8 +53,6 @@ export default function CartPage() {
       return;
     }
 
-    // Для всех пользователей (включая Telegram Web App) переходим на страницу checkout
-    // Редирект в бот произойдет после подтверждения заказа на странице checkout
     router.push("/checkout");
   };
 
@@ -98,7 +101,7 @@ export default function CartPage() {
         <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           <div className="lg:col-span-2 space-y-3 sm:space-y-4">
             {items.map((item) => (
-              <Card key={item.id} className="bg-white rounded-2xl sm:rounded-3xl border-2 border-sweet-pink p-3 sm:p-4 lg:p-6">
+              <Card key={`${item.id}-${item.withHelium ? "helium" : "base"}`} className="bg-white rounded-2xl sm:rounded-3xl border-2 border-sweet-pink p-3 sm:p-4 lg:p-6">
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-6">
                   <div className="relative w-full sm:w-20 sm:h-20 lg:w-24 lg:h-24 flex-shrink-0 rounded-xl sm:rounded-2xl overflow-hidden bg-sweet-pink-light aspect-square sm:aspect-auto">
                     <Image
@@ -111,20 +114,27 @@ export default function CartPage() {
                   </div>
 
                   <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="text-base sm:text-lg font-bold text-foreground line-clamp-2 flex-1">{item.name}</h3>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <h3 className="text-base sm:text-lg font-bold text-foreground line-clamp-2 flex-1">{item.name}</h3>
+                          {item.variantLabel && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-sweet-pink-light/60 px-2.5 py-1 text-xs font-medium text-sweet-magenta">
+                              {item.variantLabel}
+                            </span>
+                          )}
+                        </div>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => removeItem(item.id, item.withHelium)}
                           className="text-destructive hover:bg-destructive/10 rounded-full flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10"
                           aria-label={t("cart.removeItem")}
                         >
                           <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                         </Button>
                       </div>
-                      <p className="text-lg sm:text-xl font-bold text-sweet-magenta mb-3 sm:mb-4">
+                      <p className="text-lg sm:text-xl font-bold text-sweet-magenta">
                         {formatUZS(item.price)}
                       </p>
 
@@ -132,7 +142,7 @@ export default function CartPage() {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity - 1, item.withHelium)}
                           className="h-9 w-9 sm:h-10 sm:w-10 rounded-full border-2 border-sweet-pink hover:bg-sweet-pink-light flex-shrink-0"
                           aria-label={t("cart.decreaseQuantity")}
                         >
@@ -144,8 +154,8 @@ export default function CartPage() {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="h-9 w-9 sm:h-10 sm:w-10 rounded-full border-2 border-sweet-пink hover:bg-sweet-pink-light flex-shrink-0"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1, item.withHelium)}
+                          className="h-9 w-9 sm:h-10 sm:w-10 rounded-full border-2 border-sweet-pink hover:bg-sweet-pink-light flex-shrink-0"
                           aria-label={t("cart.increaseQuantity")}
                         >
                           <Plus className="w-4 h-4" />
@@ -198,10 +208,10 @@ export default function CartPage() {
 
               <Link href="/" className="block mt-3">
                 <Button
-                  variant="outline"
-                  className="w-full border-2 border-sweet-pink text-foreground hover:bg-sweet-pink-light rounded-full py-5 sm:py-6 text-base sm:text-lg font-semibold"
+                  variant="ghost"
+                  className="w-full rounded-full border border-transparent hover:border-sweet-pink/30 hover:bg-sweet-pink-light/60"
                 >
-                  {t("cart.continue")}
+                  {translate("cart.continueShopping", language === "uz" ? "Xaridni davom ettirish" : "Продолжить покупки")}
                 </Button>
               </Link>
             </Card>

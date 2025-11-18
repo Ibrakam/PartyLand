@@ -8,13 +8,15 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  withHelium?: boolean;
+  variantLabel?: string;
 }
 
 interface CartContextType {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeItem: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
+  removeItem: (id: number, withHelium?: boolean) => void;
+  updateQuantity: (id: number, quantity: number, withHelium?: boolean) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -48,11 +50,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = (item: Omit<CartItem, "quantity">, quantity: number = 1) => {
     setItems((currentItems) => {
-      const existingItem = currentItems.find((i) => i.id === item.id);
+      const existingItem = currentItems.find(
+        (i) =>
+          i.id === item.id &&
+          Boolean(i.withHelium) === Boolean(item.withHelium)
+      );
       
       if (existingItem) {
         return currentItems.map((i) =>
-          i.id === item.id
+          i.id === item.id && Boolean(i.withHelium) === Boolean(item.withHelium)
             ? { ...i, quantity: i.quantity + quantity }
             : i
         );
@@ -62,19 +68,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const removeItem = (id: number) => {
-    setItems((currentItems) => currentItems.filter((item) => item.id !== id));
+  const removeItem = (id: number, withHelium?: boolean) => {
+    setItems((currentItems) =>
+      currentItems.filter(
+        (item) =>
+          item.id !== id || Boolean(item.withHelium) !== Boolean(withHelium)
+      )
+    );
   };
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = (id: number, quantity: number, withHelium?: boolean) => {
     if (quantity <= 0) {
-      removeItem(id);
+      removeItem(id, withHelium);
       return;
     }
     
     setItems((currentItems) =>
       currentItems.map((item) =>
-        item.id === id ? { ...item, quantity } : item
+        item.id === id && Boolean(item.withHelium) === Boolean(withHelium)
+          ? { ...item, quantity }
+          : item
       )
     );
   };

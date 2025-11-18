@@ -135,8 +135,9 @@ def notify_admin_new_order(order: Order) -> None:
 
     # Товары из заказа
     for item in order.order_products.all():
+        variant_label = " (с гелием)" if item.with_helium else ""
         lines.append(
-            f"• {item.product_title} × {item.quantity} — {format_sum(item.total_price)}"
+            f"• {item.product_title}{variant_label} × {item.quantity} — {format_sum(item.total_price)}"
         )
 
     lines.append("")
@@ -155,6 +156,7 @@ def notify_admin_new_order(order: Order) -> None:
     # Получаем активный payment для заказа
     active_payment = order.payments.filter(is_active=True).first()
     payment_id = active_payment.pk if active_payment else None
+    telegram_user_id = order.telegram_user.telegram_id if order.telegram_user else None
 
     # Создаем inline клавиатуру с кнопками подтверждения/отклонения
     reply_markup = None
@@ -164,11 +166,11 @@ def notify_admin_new_order(order: Order) -> None:
                 [
                     {
                         "text": "✅ Подтвердить оплату",
-                        "callback_data": f"approve_order:{order.pk}:{payment_id}"
+                        "callback_data": f"approve_order:{order.pk}:{payment_id}:{telegram_user_id or 0}"
                     },
                     {
                         "text": "❌ Отклонить",
-                        "callback_data": f"reject_order:{order.pk}:{payment_id}"
+                        "callback_data": f"reject_order:{order.pk}:{payment_id}:{telegram_user_id or 0}"
                     }
                 ]
             ]
@@ -203,17 +205,34 @@ def notify_admin_new_order(order: Order) -> None:
         logger.info(f"Successfully notified {success_count} admin(s) about order {order.pk}")
 
 
-def calculate_manual_total(cart_items: List[dict]) -> Tuple[Decimal, List[Tuple[Product, int]]]:
+def calculate_manual_total(cart_items: List[dict]) -> Tuple[Decimal, List[dict]]:
     total = Decimal('0')
-    detailed_items = []
+    detailed_items: List[dict] = []
     for item in cart_items:
         product_id = item.get('product_id')
-        quantity = item.get('quantity', 1)
+        if not product_id:
+            raise ValidationError("Product ID is required for each cart item.")
+        quantity = int(item.get('quantity', 1))
+        if quantity <= 0:
+            raise ValidationError("Quantity must be greater than zero.")
+        with_helium = bool(item.get('with_helium', False))
+
         product = get_object_or_404(Product, pk=product_id)
-        qty = int(quantity)
-        line_total = Decimal(product.price) * qty
+        if with_helium:
+            if not product.has_helium_option or product.helium_price is None:
+                raise ValidationError(f"Вариант с гелием недоступен для товара «{product.title}».")
+            unit_price = Decimal(product.helium_price)
+        else:
+            unit_price = Decimal(product.price)
+
+        line_total = unit_price * quantity
         total += line_total
-        detailed_items.append((product, qty))
+        detailed_items.append({
+            'product': product,
+            'quantity': quantity,
+            'unit_price': unit_price,
+            'with_helium': with_helium,
+        })
     return total, detailed_items
 
 
@@ -239,8 +258,10 @@ def create_checkout_order(
 
     if cart_items_query:
         total = sum([Decimal(item.get_total_price()) for item in cart_items_query])
+    elif manual_items:
+        total = sum([item['unit_price'] * item['quantity'] for item in manual_items])
     else:
-        total = sum([Decimal(product.price) * qty for product, qty in (manual_items or [])])
+        total = Decimal('0')
 
     if total <= 0:
         raise ValueError("Order total must be positive.")
@@ -268,21 +289,31 @@ def create_checkout_order(
         if cart_items_query:
             order.items.set(cart_items_query)
             for cart_item in cart_items_query:
-                OrderProduct.objects.create(
-                    order=order,
-                    product=cart_item.product,
-                    product_title=cart_item.product.title,
-                    quantity=cart_item.quantity,
-                    price_uzs=cart_item.product.price,
-                )
-        elif manual_items:
-            for product, qty in manual_items:
+                product = cart_item.product
+                with_helium = getattr(cart_item, 'with_helium', False)
+                if with_helium and product.has_helium_option and product.helium_price:
+                    unit_price = Decimal(product.helium_price)
+                else:
+                    unit_price = Decimal(product.price)
+                    with_helium = False
                 OrderProduct.objects.create(
                     order=order,
                     product=product,
                     product_title=product.title,
-                    quantity=qty,
-                    price_uzs=product.price,
+                    quantity=cart_item.quantity,
+                    price_uzs=unit_price,
+                    with_helium=with_helium,
+                )
+        elif manual_items:
+            for item in manual_items:
+                product = item['product']
+                OrderProduct.objects.create(
+                    order=order,
+                    product=product,
+                    product_title=product.title,
+                    quantity=item['quantity'],
+                    price_uzs=item['unit_price'],
+                    with_helium=item['with_helium'],
                 )
 
         payment = Payment.objects.create(

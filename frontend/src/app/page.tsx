@@ -4,8 +4,8 @@ import { Navigation } from "@/components/Navigation";
 import { ProductDetailModal } from "@/components/ProductDetailModal";
 import { SearchBar } from "@/components/SearchBar";
 import { PromoBanner } from "@/components/PromoBanner";
-import { CategoryScroll } from "@/components/CategoryScroll";
 import { CategoryIcons } from "@/components/CategoryIcons";
+import { CategoryGrid } from "@/components/CategoryGrid";
 import { ProductCardCompact } from "@/components/ProductCardCompact";
 import { Sparkles } from "lucide-react";
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -43,6 +43,8 @@ type FrontProduct = {
   name: string;
   description: string;
   price: number;
+  heliumPrice: number | null;
+  hasHeliumOption: boolean;
   image: string;
   category: string;
   longDescription?: string;
@@ -112,6 +114,8 @@ export default function Home() {
             ? p.description_uz
             : p.description,
         price: Number(p.price) || 0,
+        heliumPrice: p.helium_price ? Number(p.helium_price) : null,
+        hasHeliumOption: Boolean(p.has_helium_option),
         image: getImageUrl(p.image),
         category: categoryName,
         longDescription:
@@ -175,6 +179,8 @@ export default function Home() {
               ? fullProduct.description_uz
               : fullProduct.description,
           price: Number(fullProduct.price) || 0,
+          heliumPrice: fullProduct.helium_price ? Number(fullProduct.helium_price) : null,
+          hasHeliumOption: Boolean(fullProduct.has_helium_option),
           image: getImageUrl(fullProduct.image),
           category: categoryName || product.category,
           longDescription:
@@ -246,13 +252,10 @@ export default function Home() {
           />
         )}
 
-        {/* Category Scroll */}
         {backendCategories.length > 0 && (
-          <div className="py-2">
-            <CategoryScroll
+          <div className="px-1">
+            <CategoryGrid
               categories={backendCategories}
-              selectedCategory={selectedCategory}
-              onCategorySelect={setSelectedCategory}
               language={language}
               getImageUrl={getImageUrl}
             />

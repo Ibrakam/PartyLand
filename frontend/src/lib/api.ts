@@ -15,6 +15,8 @@ export interface Product {
   description: string;
   description_uz?: string;
   price: string;
+  helium_price?: string | null;
+  has_helium_option?: boolean;
   category: string | Category; // Может быть строкой или объектом Category в детальном ответе
   image?: string;
   created_at: string;
@@ -32,6 +34,7 @@ export interface Category {
 export interface CheckoutItemPayload {
   product_id: number;
   quantity: number;
+  with_helium?: boolean;
 }
 
 export interface CheckoutPayload {

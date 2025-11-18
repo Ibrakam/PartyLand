@@ -33,9 +33,29 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    has_helium_option = models.BooleanField(default=False)
+    helium_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
 
     def __str__(self):
         return self.title
+
+    def clean(self):
+        super().clean()
+        if self.has_helium_option:
+            if self.helium_price is None:
+                raise ValidationError({"helium_price": "Укажите цену варианта с гелием."})
+            if self.helium_price <= 0:
+                raise ValidationError({"helium_price": "Цена варианта с гелием должна быть положительной."})
+        else:
+            self.helium_price = None
+        if self.price is not None and self.price <= 0:
+            raise ValidationError({"price": "Цена должна быть положительной."})
+
+    def save(self, *args, **kwargs):
+        if not self.has_helium_option:
+            self.helium_price = None
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class CartItem(models.Model):
@@ -181,13 +201,15 @@ class OrderProduct(models.Model):
     product_title = models.CharField(max_length=255)
     quantity = models.PositiveIntegerField(default=1)
     price_uzs = models.DecimalField(max_digits=12, decimal_places=2)
+    with_helium = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Order product"
         verbose_name_plural = "Order products"
 
     def __str__(self):
-        return f"{self.product_title} x{self.quantity} (Order #{self.order_id})"
+        variant = " (с гелием)" if self.with_helium else ""
+        return f"{self.product_title}{variant} x{self.quantity} (Order #{self.order_id})"
 
     @property
     def total_price(self) -> Decimal:
