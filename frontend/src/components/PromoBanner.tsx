@@ -80,7 +80,7 @@ export function PromoBanner({ slides = defaultSlides }: PromoBannerProps) {
   const currentSlideData = slides[currentSlide];
 
   return (
-    <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden bg-gradient-to-br from-sweet-pink via-sweet-magenta to-sweet-purple">
+    <div className="relative w-full h-60 sm:h-72 md:h-96 rounded-2xl overflow-hidden bg-gradient-to-br from-sweet-pink via-sweet-magenta to-sweet-purple">
       {/* Снежинки декоративные */}
       <div className="absolute inset-0 pointer-events-none">
         {snowflakePositions.map((pos, i) => (
@@ -108,39 +108,36 @@ export function PromoBanner({ slides = defaultSlides }: PromoBannerProps) {
           transition={{ duration: defaultAnim.duration, ease: defaultAnim.ease }}
           className="absolute inset-0 flex items-center"
         >
-          <div className="container mx-auto px-6 md:px-12 relative z-10">
-            <div className="flex items-center justify-between">
-              {/* Текст слева */}
-              <div className="flex-1 max-w-2xl">
-                <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
+          <div className="container mx-auto h-full px-4 sm:px-6 md:px-12 relative z-10 flex items-center justify-between">
+            {/* Текст слева */}
+            <div className="flex-1 max-w-2xl">
+                <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4 drop-shadow-lg">
                   {currentSlideData.title}
                 </h2>
                 {currentSlideData.subtitle && (
-                  <p className="text-lg md:text-xl text-white/95 mb-6 drop-shadow-md">
+                  <p className="text-sm sm:text-lg md:text-xl text-white/95 mb-4 sm:mb-6 drop-shadow-md">
                     {currentSlideData.subtitle}
                   </p>
                 )}
                 {currentSlideData.buttonText && currentSlideData.buttonLink && (
                   <Link href={currentSlideData.buttonLink}>
                     <Button
-                      size="lg"
-                      className="bg-white hover:bg-sweet-pink-light text-sweet-magenta rounded-full px-8 py-6 text-lg font-semibold shadow-lg border-2 border-white/50 hover:border-white transition-all"
+                      size="sm"
+                      className="bg-white hover:bg-sweet-pink-light text-sweet-magenta rounded-full px-5 py-3 text-sm sm:text-base font-semibold shadow-lg border-2 border-white/50 hover:border-white transition-all sm:px-7 sm:py-4"
                     >
                       {currentSlideData.buttonText}
                     </Button>
                   </Link>
                 )}
-              </div>
-
-              {/* Изображение справа (если есть) */}
-              {currentSlideData.image && (
-                <div className="hidden md:block flex-1 max-w-md">
-                  <div className="relative w-full h-64">
-                    {/* Здесь можно добавить изображение */}
-                  </div>
-                </div>
-              )}
             </div>
+            {/* Изображение справа (если есть) */}
+            {currentSlideData.image && (
+              <div className="hidden md:block flex-1 max-w-md">
+                <div className="relative w-full h-64">
+                  {/* Здесь можно добавить изображение */}
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
       </AnimatePresence>

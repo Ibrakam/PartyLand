@@ -182,6 +182,35 @@ function ProductsPageContent() {
     return products;
   }, [backendProducts, selectedCategorySlug, selectedSubcategorySlug, backendCategories, subcategories]);
 
+  const sortedProducts = useMemo(() => {
+    const products = [...filteredProducts];
+    switch (sortOption) {
+      case "price_asc":
+        return products.sort((a, b) => a.price - b.price);
+      case "price_desc":
+        return products.sort((a, b) => b.price - a.price);
+      case "new":
+        return products.sort((a, b) => b.id - a.id);
+      default:
+        return products;
+    }
+  }, [filteredProducts, sortOption]);
+
+  const parsedPageSize = useMemo(() => {
+    const parsed = parseInt(pageSize, 10);
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      return sortedProducts.length || 0;
+    }
+    return parsed;
+  }, [pageSize, sortedProducts.length]);
+
+  const visibleProducts = useMemo(() => {
+    if (parsedPageSize === 0) {
+      return sortedProducts;
+    }
+    return sortedProducts.slice(0, parsedPageSize);
+  }, [sortedProducts, parsedPageSize]);
+
   const handleViewDetails = useCallback(async (id: number) => {
     const product = backendProducts.find(p => p.id === id);
     if (product) {
@@ -287,7 +316,7 @@ function ProductsPageContent() {
 
       {/* Categories Filter */}
       {backendCategories.length > 0 && (
-        <section className="bg-white border-b border-sweet-pink/10 sticky top-20 z-40 shadow-sm touch-pan-x" aria-label="Category filter">
+        <section className="bg-white border-b border-sweet-pink/10  top-20 z-40 shadow-sm touch-pan-x" aria-label="Category filter">
           <div className="container mx-auto max-w-7xl">
             {/* Parent Categories */}
             <div className="px-3 sm:px-4 py-3 sm:py-4">
@@ -465,16 +494,16 @@ function ProductsPageContent() {
       {/* Products Grid */}
       <main className="py-6 sm:py-8 md:py-12 px-3 sm:px-4 bg-gradient-to-b from-white via-sweet-pink-light/10 to-white min-h-[60vh]">
         <div className="container mx-auto max-w-7xl">
-          {filteredProducts.length > 0 ? (
+          {visibleProducts.length > 0 ? (
             <>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-5">
-                <Button
+                 <Button
                   variant="outline"
-                  className="rounded-full border-2 border-sweet-pink/30 bg-white px-5 py-2 text-sm font-semibold text-foreground shadow-sm hover:border-sweet-magenta/50 hover:bg-white"
+                  className="rounded-full border-2 border-sweet-pink/30 bg-white px-4 py-1.5 text-xs sm:text-sm font-semibold text-foreground shadow-sm hover:border-sweet-magenta/50 hover:bg-white"
                 >
                   <SlidersHorizontal className="mr-2 h-4 w-4" />
                   {translate("products.filter", "Фильтр")}
-                </Button>
+                 </Button>
                 <div className="flex gap-3">
                   <Select value={sortOption} onValueChange={setSortOption}>
                     <SelectTrigger className="w-40 rounded-full border-2 border-sweet-pink/30 bg-white text-sm font-semibold text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sweet-magenta/40 focus-visible:ring-offset-0 hover:border-sweet-magenta/50">
@@ -510,7 +539,7 @@ function ProductsPageContent() {
 
               <div className="mb-5 sm:mb-6 md:mb-8 px-1 sm:px-2">
                 <p className="text-xs sm:text-sm md:text-base text-muted-foreground font-medium" aria-live="polite">
-                  {t("products.found") || "Найдено"} <span className="text-sweet-magenta font-bold text-base sm:text-lg md:text-xl">{filteredProducts.length}</span> {t("products.items") || "товаров"}
+                  {t("products.found") || "Найдено"} <span className="text-sweet-magenta font-bold text-base sm:text-lg md:text-xl">{sortedProducts.length}</span> {t("products.items") || "товаров"}
                 </p>
               </div>
               <motion.div 
@@ -518,11 +547,11 @@ function ProductsPageContent() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: defaultAnim.duration, ease: defaultAnim.ease }}
-                key={`${selectedCategorySlug || "all"}-${selectedSubcategorySlug || "all"}`}
+                key={`${selectedCategorySlug || "all"}-${selectedSubcategorySlug || "all"}-${sortOption}-${pageSize}`}
                 role="list"
                 aria-label="Product list"
               >
-                {filteredProducts.map((product, index) => (
+                {visibleProducts.map((product, index) => (
                   <motion.div
                     key={product.id}
                     role="listitem"

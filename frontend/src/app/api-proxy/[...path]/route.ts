@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Всегда используем продакшн сервер
-const API_BACKEND_URL = 'http://81.162.55.70:8001';
-// const API_BACKEND_URL = 'http://localhost:8000';
+// const API_BACKEND_URL = 'http://81.162.55.70:8001';
+const API_BACKEND_URL = 'http://localhost:8000';
 
 // ВАЖНО: Эта функция обрабатывает все запросы к /api-proxy/* и проксирует их на Django бэкенд
 
