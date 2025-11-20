@@ -22,52 +22,127 @@ export function CategoryGrid({ categories, language, getImageUrl }: CategoryGrid
   }
 
   return (
-    <section className="container mx-auto max-w-6xl px-1 sm:px-3" aria-label="Категории">
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
-        {parentCategories.map((category) => {
-          const categoryName =
-            language === "uz" && category.name_uz
-              ? category.name_uz
-              : category.name;
+    <section className="w-full px-3 py-6" aria-label="Категории" style={{ backgroundColor: '#FDF2F8' }}>
+      <div className="w-full max-w-none">
+        {/* На мобильных - сетка 2x2, на больших экранах - горизонтальная прокрутка */}
+        <div className="grid grid-cols-2 gap-3 md:hidden">
+          {parentCategories.map((category) => {
+            const categoryName =
+              language === "uz" && category.name_uz
+                ? category.name_uz
+                : category.name;
 
-          return (
-            <motion.div
-              key={category.id}
-              whileHover={prefersReducedMotion ? {} : { y: -4 }}
-              whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
-              transition={{ duration: micro.duration, ease: micro.ease }}
-              className="h-full"
-            >
-              <Link
-                href={`/products?category=${category.slug}`}
-                className="group relative flex h-full items-center justify-between gap-3 overflow-hidden rounded-2xl border border-sweet-pink/15 bg-white/95 px-3 py-3 text-left shadow-[0_14px_36px_-24px_rgba(255,93,159,0.55)] transition-shadow hover:shadow-[0_20px_44px_-22px_rgba(255,93,159,0.55)] sm:px-4 sm:py-4"
+            return (
+              <motion.div
+                key={category.id}
+                whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                transition={{ duration: micro.duration, ease: micro.ease }}
+                className="h-full"
               >
-                <div className="relative z-10 flex flex-1 flex-col justify-center space-y-1">
-                  <h3 className="text-sm sm:text-base font-semibold text-foreground leading-snug group-hover:text-sweet-magenta transition-colors line-clamp-2">
-                    {categoryName}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {language === "uz" ? "Mahsulotlarni ko'rish" : "Посмотреть товары"}
-                  </p>
-                </div>
-                <div className="relative z-10 flex h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-sweet-pink-light/55 via-white to-white">
-                  {category.image ? (
-                    <Image
-                      src={getImageUrl(category.image)}
-                      alt={categoryName}
-                      fill
-                      sizes="70px"
-                      className="object-contain"
+                <Link
+                  href={`/products?category=${category.slug}`}
+                  className="group relative flex h-[130px] items-start justify-between overflow-hidden rounded-3xl bg-white p-5 shadow-lg border border-pink-100 hover:shadow-xl transition-all duration-300"
+                >
+                  {/* Иконка - за текстом */}
+                  <div className="absolute right-3 top-3 bottom-3 flex items-center justify-center z-0">
+                    {category.image ? (
+                      <div className="relative w-20 h-20">
+                        <Image
+                          src={getImageUrl(category.image)}
+                          alt={categoryName}
+                          fill
+                          className="object-contain"
+                          sizes="80px"
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-5xl">🎈</span>
+                    )}
+                  </div>
+                  
+                  {/* Текстовая часть */}
+                  <div className="relative z-10 flex flex-1 flex-col justify-start h-full pr-3">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-bold text-gray-800 leading-tight">
+                        {categoryName}
+                      </h3>
+                    </div>
+                  </div>
+                  
+                  {/* Розовый градиент-фон */}
+                  <div 
+                    className="absolute inset-0 opacity-8"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255, 105, 180, 0.08) 0%, rgba(255, 182, 193, 0.05) 50%, rgba(255, 192, 203, 0.03) 100%)'
+                    }}
+                  />
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+        
+        {/* Для больших экранов - горизонтальная прокрутка */}
+        <div className="hidden md:block">
+          <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
+            {parentCategories.map((category) => {
+              const categoryName =
+                language === "uz" && category.name_uz
+                  ? category.name_uz
+                  : category.name;
+
+              return (
+                <motion.div
+                  key={category.id}
+                  whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                  whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                  transition={{ duration: micro.duration, ease: micro.ease }}
+                  className="flex-shrink-0"
+                >
+                  <Link
+                    href={`/products?category=${category.slug}`}
+                    className="group relative flex h-[130px] w-[280px] items-start justify-between overflow-hidden rounded-3xl bg-white p-5 shadow-lg border border-pink-100 hover:shadow-xl transition-all duration-300"
+                  >
+                    {/* Иконка - за текстом */}
+                    <div className="absolute right-3 top-3 bottom-3 flex items-center justify-center z-0 opacity-30">
+                      {category.image ? (
+                        <div className="relative w-20 h-20">
+                          <Image
+                            src={getImageUrl(category.image)}
+                            alt={categoryName}
+                            fill
+                            className="object-contain"
+                            sizes="80px"
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-5xl opacity-20">🎈</span>
+                      )}
+                    </div>
+                    
+                    {/* Текстовая часть */}
+                    <div className="relative z-10 flex flex-1 flex-col justify-start h-full pr-3">
+                      <div className="flex-1">
+                        <h3 className="text-base font-bold text-gray-800 leading-tight">
+                          {categoryName}
+                        </h3>
+                      </div>
+                    </div>
+                    
+                    {/* Розовый градиент-фон */}
+                    <div 
+                      className="absolute inset-0 opacity-8"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(255, 105, 180, 0.08) 0%, rgba(255, 182, 193, 0.05) 50%, rgba(255, 192, 203, 0.03) 100%)'
+                      }}
                     />
-                  ) : (
-                    <span className="text-2xl sm:text-3xl">🎈</span>
-                  )}
-                </div>
-                <span className="pointer-events-none absolute -right-6 bottom-0 h-16 w-16 rounded-full bg-sweet-pink/12 blur-2xl" />
-              </Link>
-            </motion.div>
-          );
-        })}
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </section>
   );

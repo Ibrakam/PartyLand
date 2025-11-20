@@ -78,13 +78,6 @@ export function Navigation() {
             >
               {t("nav.products")}
             </Link>
-            <Link
-              href="/about"
-              className="text-foreground hover:text-sweet-magenta font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sweet-magenta focus-visible:ring-offset-2 rounded"
-              aria-current={pathname === "/about" ? "page" : undefined}
-            >
-              {t("nav.about")}
-            </Link>
           </div>
 
           {/* Actions */}
@@ -159,20 +152,6 @@ export function Navigation() {
                           icon={<Package className="w-5 h-5" />}
                           label={t("nav.products")}
                           active={pathname === "/products"}
-                          onClick={() => setMobileOpen(false)}
-                        />
-                      </motion.div>
-                      <motion.div
-                        key="about"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={mobileOpen ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
-                        transition={{ duration: 0.25, delay: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
-                      >
-                        <MobileNavLink
-                          href="/about"
-                          icon={<Info className="w-5 h-5" />}
-                          label={t("nav.about")}
-                          active={pathname === "/about"}
                           onClick={() => setMobileOpen(false)}
                         />
                       </motion.div>

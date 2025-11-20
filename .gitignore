@@ -34,13 +34,13 @@ venv.bak/
 # Django
 *.log
 local_settings.py
-db.sqlite3
-db.sqlite3-journal
-Shop_site/db.sqlite3
-Shop_site/db.sqlite3-journal
+# db.sqlite3
+# db.sqlite3-journal
+# Shop_site/db.sqlite3
+# Shop_site/db.sqlite3-journal
 
 # Media files (user uploaded content)
-Shop_site/media/
+# Shop_site/media/
 !Shop_site/media/.gitkeep
 
 # Static files (collected)

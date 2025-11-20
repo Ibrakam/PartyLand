@@ -7,6 +7,7 @@ import { PromoBanner } from "@/components/PromoBanner";
 import { CategoryIcons } from "@/components/CategoryIcons";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { ProductCardCompact } from "@/components/ProductCardCompact";
+import { AboutSection } from "@/components/AboutSection";
 import { Sparkles } from "lucide-react";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { isTelegramWebApp, initTelegramWebApp } from "@/lib/telegram";
@@ -253,7 +254,7 @@ export default function Home() {
         )}
 
         {backendCategories.length > 0 && (
-          <div className="px-1">
+          <div className="w-full">
             <CategoryGrid
               categories={backendCategories}
               language={language}
@@ -381,6 +382,9 @@ export default function Home() {
           )
         )}
       </main>
+
+      {/* About Section */}
+      <AboutSection />
 
       {/* Product Detail Modal */}
       {selectedProduct && (
